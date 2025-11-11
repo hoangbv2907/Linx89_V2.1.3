@@ -5,6 +5,8 @@
 #include <commctrl.h>
 #include "WindowManager.h"
 #include "Logger.h"
+//thay doi luc 11h11 ng�y 11/11/2025 
+#pragma comment(lib, "ws2_32.lib")
 
 static WindowManager g_windowManager;
 
