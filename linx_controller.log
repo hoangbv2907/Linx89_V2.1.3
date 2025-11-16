@@ -111,3 +111,19 @@
 21:14:54.063 [INFO] UI controls created
 21:14:54.064 [INFO] Worker thread started
 21:14:54.135 [INFO] Application started successfully
+21:41:29.698 [INFO] Logger initialized
+21:41:29.706 [INFO] Linx Controller starting...
+21:41:29.706 [INFO] WindowManager initialized
+21:41:29.712 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+21:41:29.712 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+21:41:29.712 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+21:41:29.713 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+21:41:29.713 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+21:41:29.713 [INFO] AppController initialized with 5 cleanup tasks
+21:41:29.722 [INFO] UIManager initialized
+21:41:29.779 [INFO] UI controls created
+21:41:29.779 [INFO] Worker thread started
+21:41:29.892 [INFO] Application started successfully
+21:41:34.732 [ERROR] Worker thread stop timeout - emergency detach
+21:41:34.732 [INFO] Worker thread emergency detached
+21:41:35.811 [INFO] WorkerLoop exited normally
