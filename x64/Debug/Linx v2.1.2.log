@@ -1,8 +1,6 @@
 ﻿  AppController.cpp
   main.cpp
   MessageLogger.cpp
-C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\main.cpp(7,10): error C2006: '#include': expected "FILENAME" or <FILENAME>
-C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\main.cpp(7,10): error C1083: Cannot open include file: '': No such file or directory
   ModernButton.cpp
   PrinterCore.cpp
   RciClient.cpp
@@ -10,4 +8,5 @@ C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\main.cpp(7,
   UIManager.cpp
   WindowManager.cpp
   Generating Code...
-C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(150,1): warning C4715: 'WindowManager::HandleMessage': not all control paths return a value
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(152,1): warning C4715: 'WindowManager::HandleMessage': not all control paths return a value
+  Linx v2.1.2.vcxproj -> C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\x64\Debug\Linx v2.1.2.exe

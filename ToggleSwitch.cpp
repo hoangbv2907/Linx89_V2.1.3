@@ -10,7 +10,9 @@ ToggleSwitch::~ToggleSwitch() {
     }
 }
 
+// Tạo control Win32
 HWND ToggleSwitch::Create(HWND hParent, int x, int y, int width, int height, int id) {
+	// Tạo một button với kiểu BS_OWNERDRAW để tự vẽ
     hwnd_ = CreateWindowW(L"BUTTON", L"",
         WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         x, y, width, height,
@@ -18,12 +20,13 @@ HWND ToggleSwitch::Create(HWND hParent, int x, int y, int width, int height, int
 
     if (hwnd_ && FontManager::GetInstance().GetToggleFont()) {
         SendMessage(hwnd_, WM_SETFONT,
-            (WPARAM)FontManager::GetInstance().GetToggleFont(), TRUE); // ✅ ĐÃ SỬA: GetToggleFont() đã trả về HFONT
+			(WPARAM)FontManager::GetInstance().GetToggleFont(), TRUE); // Áp dụng font tùy chỉnh
     }
 
     return hwnd_;
 }
 
+// Vẽ công tắc
 void ToggleSwitch::Draw(LPDRAWITEMSTRUCT dis) {
     if (!dis) return;
 
@@ -55,14 +58,16 @@ void ToggleSwitch::Draw(LPDRAWITEMSTRUCT dis) {
     SelectObject(hdc, oldFont);
 }
 
+// Chuyển đổi trạng thái
 void ToggleSwitch::Toggle() {
     isOn_ = !isOn_;
     if (hwnd_) InvalidateRect(hwnd_, NULL, TRUE);
 }
 
+// Đặt trạng thái cụ thể
 void ToggleSwitch::SetState(bool state) {
     if (isOn_ != state) {
-        isOn_ = state;
-        if (hwnd_) InvalidateRect(hwnd_, NULL, TRUE);
+		isOn_ = state;  // Cập nhật trạng thái
+		if (hwnd_) InvalidateRect(hwnd_, NULL, TRUE);   // Yêu cầu vẽ lại
     }
 }

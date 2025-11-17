@@ -558,8 +558,8 @@ void AppController::HandleStopJetRequest() {
     }
 }
 
+/*
 void AppController::HandleConnectRequest(const Request& request) {
-    SendLogMessage(L"Đang kết nối đến " + request.data + L"...");
 
     PrinterState connectingState;
     connectingState.status = PrinterStatus::Connecting;
@@ -567,6 +567,8 @@ void AppController::HandleConnectRequest(const Request& request) {
     printerModel_->SetState(connectingState);
 
     SendStateUpdate();
+    SendConnectionUpdate(true);
+    SendLogMessage(L"Đang kết nối đến " + request.data + L"...");
 
     if (rciClient_ && rciClient_->Connect(request.data)) {
         printerModel_->SetConnectionInfo(request.data, 9100);
@@ -578,6 +580,7 @@ void AppController::HandleConnectRequest(const Request& request) {
 
         reconnectAttempts_ = 0;
         SendLogMessage(L"✅ Kết nối thành công");
+        SendConnectionUpdate(true);
     }
     else {
         PrinterState errorState;
@@ -595,6 +598,49 @@ void AppController::HandleConnectRequest(const Request& request) {
     else {
         SendConnectionUpdate(false);
     }
+}
+
+*/
+void AppController::HandleConnectRequest(const Request& request) {
+    // 1️⃣ Cập nhật UI ngay
+    PrinterState connectingState;
+    connectingState.status = PrinterStatus::Connecting;
+    connectingState.statusText = L"Đang kết nối...";
+    printerModel_->SetState(connectingState);
+
+    SendStateUpdate();
+    SendConnectionUpdate(true); // toggle bật ngay
+    SendLogMessage(L"Đang kết nối đến " + request.data + L"...");
+
+    // 2️⃣ Chạy kết nối trong thread riêng để không block UI
+    std::thread([this, request]() {
+        bool connectResult = false;
+        if (rciClient_) {
+            connectResult = rciClient_->Connect(request.data);
+            if (connectResult) {
+                printerModel_->SetConnectionInfo(request.data, 9100);
+            }
+        }
+
+        // 3️⃣ Cập nhật state sau khi kết nối xong
+        PrinterState finalState;
+        if (connectResult) {
+            finalState.status = PrinterStatus::Connected;
+            finalState.statusText = L"Đã kết nối";
+            reconnectAttempts_ = 0;
+            SendLogMessage(L"✅ Kết nối thành công");
+        }
+        else {
+            finalState.status = PrinterStatus::Error;
+            finalState.statusText = L"Lỗi kết nối";
+            reconnectAttempts_++;
+            SendLogMessage(L"❌ Kết nối thất bại", 2);
+        }
+
+        printerModel_->SetState(finalState);
+        SendStateUpdate();
+        SendConnectionUpdate(connectResult);
+        }).detach(); // detach để chạy nền
 }
 
 void AppController::HandleSetCountRequest(const Request& request) {

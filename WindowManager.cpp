@@ -120,6 +120,7 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_APP_PRINTER_UPDATE: {   //cập nhật trạng thái máy in trên UI
         PrinterStateMessage* stateMsg = reinterpret_cast<PrinterStateMessage*>(wParam);
         HandlePrinterUpdate(stateMsg);
+
         delete stateMsg;
         return 0;
     }
@@ -210,6 +211,8 @@ void WindowManager::HandlePrinterUpdate(PrinterStateMessage* msg) {
     if (uiManager_ && msg) {
 		uiManager_->UpdatePrinterStatus(msg->statusText);   // Cập nhật text trạng thái máy in
 		uiManager_->UpdatePrinterUIState(msg->state);       // Cập nhật trạng thái UI dựa trên trạng thái máy in
+        Logger::GetInstance().Write(L"HandlePrinterUpdate: status=" + std::to_wstring((int)msg->state.status));
+
     }
 }
 
