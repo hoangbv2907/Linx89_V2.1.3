@@ -24,10 +24,13 @@ public:
     AppController(HWND mainWindow);
     ~AppController();
 
-    // Manual cleanup method
+	//==== Cleanup routines ====
+    // đóng socket ngay lập tức, dừng jet, reset state
     void EmergencyCleanup();
+    //tắt ứng dụng bình thường
     void ComprehensiveCleanup();
-    // Public API for UI - chỉ push request vào queue
+
+	//=====Public API for UI - chỉ push request vào queue=====
     void Connect(const std::wstring& ipAddress);
     void Disconnect();
     void StartPrinting(const std::wstring& content, int count);
@@ -36,57 +39,58 @@ public:
     void StartJet();
     void StopJet();
 
+	//===== Validation methods===
     bool ValidatePrintContent(const std::wstring& content);
     bool ValidatePrintCount(int count);
-    // State access
-    PrinterState GetCurrentState() const;
-    bool IsConnected() const;
+	//======= Getter methods =====
+    PrinterState GetCurrentState() const; //Lấy trạng thái đang lưu trong PrinterModel
+	bool IsConnected() const;   //Kiểm tra trạng thái kết nối từ RciClient
 
-    // Thread management
-    void StartWorkerThread();
-    bool StopWorkerThread(int timeoutMs);
+	//================= WORKER THREAD MANAGEMENT =================
+	void StartWorkerThread();   //khởi động worker thread
+	bool StopWorkerThread(int timeoutMs);   //dừng worker thread với timeout
 
 private:
-    ResourceTracker resourceTracker;
-    HWND mainWindow_;
-    std::unique_ptr<RciClient> rciClient_;
-    std::unique_ptr<PrinterModel> printerModel_;
+	ResourceTracker resourceTracker;    // Quản lý cleanup resources
+	HWND mainWindow_;   // Handle của cửa sổ chính
+	std::unique_ptr<RciClient> rciClient_;  // Client RCI để giao tiếp với máy in
+	std::unique_ptr<PrinterModel> printerModel_;    // Model lưu trạng thái máy in
 
-    // Worker thread và queue
-    std::thread workerThread_;
-    std::atomic<bool> running_{ false };
-    RequestQueue requestQueue_;
+	//=== Worker thread and request queue ====
+	std::thread workerThread_;  // Thread xử lý nền
+	std::atomic<bool> running_{ false };    // Biến điều khiển vòng lặp worker thread
+	RequestQueue requestQueue_; // Queue chứa các request từ UI
 
-    // State machine variables
-    std::atomic<bool> autoReconnect_{ true };
-    std::atomic<int> reconnectAttempts_{ 0 };
-    const int MAX_RECONNECT_ATTEMPTS = 5;
+	//== Reconnect management ==
+	std::atomic<bool> autoReconnect_{ true };   // Tự động reconnect khi mất kết nối
+	std::atomic<int> reconnectAttempts_{ 0 };   // Số lần đã thử reconnect
+	const int MAX_RECONNECT_ATTEMPTS = 5;   // Giới hạn số lần reconnect
 
-    // Worker thread functions
-    void WorkerLoop();
-    void HandleRequest(const Request& request);
-    void DoPeriodicPoll();
-    void TryReconnect();
+	//== Worker thread methods ==
+	void WorkerLoop();  // Vòng lặp chính của worker thread
+	void HandleRequest(const Request& request); // Xử lý từng request cụ thể
+	void DoPeriodicPoll();  // Poll trạng thái định kỳ
+	void TryReconnect();    // Thử reconnect nếu mất kết nối
 
-    // Request handlers
-    void HandleStatusRequest();
-    void HandlePrintCountRequest();
-    void HandleStartPrintRequest(const Request& request);
-    void HandleStopPrintRequest();
+	//==== Request Handlers =====
+	void HandleStatusRequest();     // Xử lý yêu cầu lấy trạng thái
+	void HandlePrintCountRequest();     // Xử lý yêu cầu lấy số lượng đã in
+	void HandleStartPrintRequest(const Request& request);   // Xử lý yêu cầu bắt đầu in
+	void HandleStopPrintRequest();  // Xử lý yêu cầu dừng in
 
-    void HandleSetCountRequest(const Request& request);
-    bool HandleStartJetRequest();
-    void HandleStopJetRequest();
-    void HandleConnectRequest(const Request& request);
-    void HandleDisconnectRequest();
-    // State machine logic
-    void UpdatePrinterState();
-    bool ShouldPollStatus() const;
-    bool ShouldGetPrintCount() const;
-    bool ShouldAutoStartJet() const;
+	void HandleSetCountRequest(const Request& request);		// Xử lý yêu cầu đặt số lượng in
+	bool HandleStartJetRequest();	// Xử lý yêu cầu bật jet
+	void HandleStopJetRequest();	// Xử lý yêu cầu tắt jet
+	void HandleConnectRequest(const Request& request);	// Xử lý yêu cầu kết nối
+	void HandleDisconnectRequest();	// Xử lý yêu cầu ngắt kết nối
+	//==State machine logic==
+	void UpdatePrinterState();	// Cập nhật trạng thái máy in theo state machine
+	bool ShouldPollStatus() const;	// Kiểm tra có nên poll trạng thái không
+	bool ShouldGetPrintCount() const;	// Kiểm tra có nên lấy số lượng in không
+	bool ShouldAutoStartJet() const;	// Kiểm tra có nên tự động bật jet không
 
-    // Message sending to UI (thread-safe)
-    void SendStateUpdate();
-    void SendLogMessage(const std::wstring& text, int level = 0);
-    void SendConnectionUpdate(bool connected);
+	//=================== Messaging to UI ==================
+	void SendStateUpdate();		// Gửi cập nhật trạng thái máy in tới UI
+	void SendLogMessage(const std::wstring& text, int level = 0);	// Gửi thông điệp log tới UI
+	void SendConnectionUpdate(bool connected);	// Gửi cập nhật trạng thái kết nối tới UI
 };

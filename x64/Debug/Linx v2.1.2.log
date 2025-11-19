@@ -2,7 +2,6 @@
   main.cpp
   MessageLogger.cpp
   ModernButton.cpp
-  PrinterCore.cpp
   RciClient.cpp
   ToggleSwitch.cpp
   UIManager.cpp

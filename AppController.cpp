@@ -12,20 +12,20 @@
 
 AppController::AppController(HWND mainWindow)
     : mainWindow_(mainWindow),
-    resourceTracker("AppController") {
+	resourceTracker("AppController") {  // Khởi tạo ResourceTracker với tên "AppController"
 
-    // Khởi tạo các components
-    printerModel_ = std::make_unique<PrinterModel>();
-    rciClient_ = std::make_unique<RciClient>();
+	//==Khởi tạo các components chính==
+	printerModel_ = std::make_unique<PrinterModel>();   // Model lưu trạng thái máy in
+	rciClient_ = std::make_unique<RciClient>();     // Client RCI để giao tiếp với máy in
 
-    // Set callback for printer messages
-    rciClient_->SetMessageCallback([this](const std::wstring& msg, int level) {
-        this->SendLogMessage(L"[Máy in] " + msg, level);
+	//== ĐĂNG KÝ CALLBACK LOG TỪ RCI CLIENT ==
+    rciClient_->SetMessageCallback([this](const std::wstring& msg, int level) { 
+		this->SendLogMessage(L"[Máy in] " + msg, level);        // Gửi log message lên UI qua AppController
         });
 
     // ========== ĐĂNG KÝ CLEANUP TASKS ==========
 
-    // 1. Network connections cleanup
+	// 1. RCI Client cleanup
     resourceTracker.addCleanup("RciClient_Disconnect", [this]() {
         if (rciClient_) {
             Logger::GetInstance().Write(L"Disconnecting RCI client...");
@@ -74,7 +74,7 @@ AppController::AppController(HWND mainWindow)
 AppController::~AppController() {
     Logger::GetInstance().Write(L"AppController destructor called");
 
-    // ✅ ĐẢM BẢO CHỈ GỌI CLEANUP MỘT LẦN
+	// ✅ THÊM PROTECTION
     static std::atomic<bool> destructorCalled{ false };
     if (destructorCalled.exchange(true)) {
         Logger::GetInstance().Write(L"AppController destructor already called - skipping");
@@ -94,52 +94,54 @@ AppController::~AppController() {
     }
 }
 
+// Khởi động worker thread
 void AppController::StartWorkerThread() {
     if (running_) return;
 
     running_ = true;
-    workerThread_ = std::thread(&AppController::WorkerLoop, this);
-    Logger::GetInstance().Write(L"Worker thread started");
+	workerThread_ = std::thread(&AppController::WorkerLoop, this);  // Bắt đầu vòng lặp worker thread
+	Logger::GetInstance().Write(L"Worker thread started");  // Log khởi động thread
 }
 
-// ✅ SỬA: Thêm return type bool
+// Dừng worker thread với timeout
 bool AppController::StopWorkerThread(int timeoutMs) {
     running_ = false;
     bool success = true;
 
-    // ✅ BIẾN THEO DÕI TRẠNG THÁI TOÀN CỤC
+    // BIẾN THEO DÕI TRẠNG THÁI TOÀN CỤC
     static std::atomic<bool> stopInProgress{ false };
 
+	// TRÁNH MULTIPLE CALLS
     if (stopInProgress.exchange(true)) {
         Logger::GetInstance().Write(L"StopWorkerThread already in progress - skipping");
         return false;
     }
 
-    // ✅ SCOPE GUARD ĐẢM BẢO RESET
+    // SCOPE GUARD ĐẢM BẢO RESET
     struct ScopeGuard {
-        std::atomic<bool>& flag;
+		std::atomic<bool>& flag;    // Tham chiếu đến biến cờ
         ~ScopeGuard() {
-            // ✅ ĐẢM BẢO LUÔN RESET, NGAY CẢ KHI CÓ EXCEPTION
+            // ĐẢM BẢO LUÔN RESET, NGAY CẢ KHI CÓ EXCEPTION
             flag.store(false, std::memory_order_release);
         }
     } guard{ stopInProgress };
 
     try {
-        if (!workerThread_.joinable()) {
+		if (!workerThread_.joinable()) {    // Kiểm tra nếu thread đã dừng
             Logger::GetInstance().Write(L"Worker thread already stopped");
             return true;
         }
 
-        if (timeoutMs <= 0) {
+		if (timeoutMs <= 0) {       // Nếu không có timeout, join bình thường
             workerThread_.join();
             Logger::GetInstance().Write(L"Worker thread stopped gracefully");
         }
         else {
-            // ✅ DÙNG FUTURE VỚI EXCEPTION HANDLING
+            // DÙNG FUTURE VỚI EXCEPTION HANDLING
             std::future<void> future;
             try {
-                future = std::async(std::launch::async, [this]() {
-                    try {
+				future = std::async(std::launch::async, [this]() {  // Bắt đầu async task để join thread
+					try {      // Thử join thread
                         if (workerThread_.joinable()) {
                             workerThread_.join();
                         }
@@ -149,26 +151,26 @@ bool AppController::StopWorkerThread(int timeoutMs) {
                             std::wstring(e.what(), e.what() + strlen(e.what())), 2);
                     }
                     });
-            }
+			}   // BẮT LỖI TẠO ASYNC
             catch (const std::exception& e) {
                 Logger::GetInstance().Write(L"Failed to create async task: " +
                     std::wstring(e.what(), e.what() + strlen(e.what())), 2);
                 return false;
             }
 
-            auto status = future.wait_for(std::chrono::milliseconds(timeoutMs));
-            if (status == std::future_status::timeout) {
+			auto status = future.wait_for(std::chrono::milliseconds(timeoutMs));// Chờ với timeout
+			if (status == std::future_status::timeout) {    // Nếu timeout xảy ra
                 Logger::GetInstance().Write(L"Worker thread stop timeout - emergency detach", 2);
                 success = false;
 
-                // ✅ EMERGENCY DETACH AN TOÀN
-                try {
-                    if (workerThread_.joinable()) {
+                // EMERGENCY DETACH AN TOÀN
+				try {   // Thử detach thread
+                    if (workerThread_.joinable()) { 
                         workerThread_.detach();
                         Logger::GetInstance().Write(L"Worker thread emergency detached");
                     }
                 }
-                catch (const std::exception& e) {
+				catch (const std::exception& e) {   // BẮT LỖI DETACH
                     Logger::GetInstance().Write(L"Emergency detach failed: " +
                         std::wstring(e.what(), e.what() + strlen(e.what())), 2);
                 }
@@ -178,14 +180,14 @@ bool AppController::StopWorkerThread(int timeoutMs) {
             }
         }
     }
-    catch (const std::system_error& e) {
+	catch (const std::system_error& e) {    // BẮT LỖI HỆ THỐNG
         Logger::GetInstance().Write(L"System error in StopWorkerThread: " +
             std::wstring(e.what(), e.what() + strlen(e.what())), 2);
         success = false;
 
-        // ✅ FALLBACK: THỬ DETACH NẾU JOIN FAIL
+        //FALLBACK: THỬ DETACH NẾU JOIN FAIL
         try {
-            if (workerThread_.joinable()) {
+            if (workerThread_.joinable()) { 
                 workerThread_.detach();
                 Logger::GetInstance().Write(L"Worker thread detached after join failure");
             }
@@ -558,49 +560,6 @@ void AppController::HandleStopJetRequest() {
     }
 }
 
-/*
-void AppController::HandleConnectRequest(const Request& request) {
-
-    PrinterState connectingState;
-    connectingState.status = PrinterStatus::Connecting;
-    connectingState.statusText = L"Đang kết nối...";
-    printerModel_->SetState(connectingState);
-
-    SendStateUpdate();
-    SendConnectionUpdate(true);
-    SendLogMessage(L"Đang kết nối đến " + request.data + L"...");
-
-    if (rciClient_ && rciClient_->Connect(request.data)) {
-        printerModel_->SetConnectionInfo(request.data, 9100);
-
-        PrinterState connectedState;
-        connectedState.status = PrinterStatus::Connected;
-        connectedState.statusText = L"Đã kết nối";
-        printerModel_->SetState(connectedState);
-
-        reconnectAttempts_ = 0;
-        SendLogMessage(L"✅ Kết nối thành công");
-        SendConnectionUpdate(true);
-    }
-    else {
-        PrinterState errorState;
-        errorState.status = PrinterStatus::Error;
-        errorState.statusText = L"Lỗi kết nối";
-        printerModel_->SetState(errorState);
-
-        SendLogMessage(L"❌ Kết nối thất bại", 2);
-        reconnectAttempts_++;
-    }
-
-    if (rciClient_) {
-        SendConnectionUpdate(rciClient_->IsConnected());
-    }
-    else {
-        SendConnectionUpdate(false);
-    }
-}
-
-*/
 void AppController::HandleConnectRequest(const Request& request) {
     // 1️⃣ Cập nhật UI ngay
     PrinterState connectingState;
@@ -635,6 +594,7 @@ void AppController::HandleConnectRequest(const Request& request) {
             finalState.statusText = L"Lỗi kết nối";
             reconnectAttempts_++;
             SendLogMessage(L"❌ Kết nối thất bại", 2);
+
         }
 
         printerModel_->SetState(finalState);

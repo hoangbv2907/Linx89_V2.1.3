@@ -21,13 +21,13 @@ public:
 
     void SetStatusText(const std::wstring& status) {
         std::lock_guard<std::mutex> lock(mutex_);
-        statusText_ = status;
-        currentState_.statusText = status; // Đồng bộ với currentState_
+        currentState_.statusText = status;
+        
     }
 
     std::wstring GetStatusText() const {
         std::lock_guard<std::mutex> lock(mutex_);
-        return statusText_;
+        return currentState_.statusText;
     }
 
 private:
@@ -46,6 +46,5 @@ private:
     ~StateManager() = default;
 
     mutable std::mutex mutex_;
-    PrinterState currentState_;  // XÓA KHỞI TẠO TRỰC TIẾP
-    std::wstring statusText_ = L"Disconnected";
+    PrinterState currentState_;  
 };
