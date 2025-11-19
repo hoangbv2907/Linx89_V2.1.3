@@ -220,8 +220,9 @@ void WindowManager::HandlePrinterUpdate(PrinterStateMessage* msg) {
 void WindowManager::HandleConnectionUpdate(ConnectionMessage* msg) {
     if (uiManager_ && msg) {
         uiManager_->SetToggleState(msg->connected);     // Cập nhật trạng thái toggle
-		// Thêm message kết nối/ngắt kết nối vào log UI
-        if (msg->connected) {
+        
+        // Thêm message kết nối/ngắt kết nối vào log UI
+        if (msg->connected) { 
             uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress);
         }
         else {
@@ -256,15 +257,19 @@ void WindowManager::HandleDestroy() {
 
 //vị trí gọi: khi toggle kết nối được click.
 //xử lý event người dùng → gọi AppController + update UI.
+/*
 void WindowManager::OnToggleClicked() {
-	if (!appController_ || !uiManager_) return;     // kiểm tra AppController và UIManager tồn tại
+    if (!appController_ || !uiManager_) return;     // kiểm tra AppController và UIManager tồn tại
 
     PrinterState currentState = appController_->GetCurrentState();  // lấy trạng thái máy in hiện tại
-	// nếu đang disconnected → kết nối
+    // nếu đang disconnected → kết nối
     if (currentState.status == PrinterStatus::Disconnected) {
-		std::wstring ip = uiManager_->GetIPAddress();   // lấy địa chỉ IP từ UI
-		if (uiManager_->ValidateInput()) {      // kiểm tra địa chỉ IP hợp lệ
-			appController_->Connect(ip);        // gọi kết nối trong AppController
+        std::wstring ip = uiManager_->GetIPAddress();   // lấy địa chỉ IP từ UI
+        if (uiManager_->ValidateInput()) {      // kiểm tra địa chỉ IP hợp lệ
+
+            uiManager_->SetToggleState(true);
+
+            appController_->Connect(ip);        // gọi kết nối trong AppController
             uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip);
         }
         else {
@@ -273,10 +278,46 @@ void WindowManager::OnToggleClicked() {
         }
     }
     else {
-		appController_->Disconnect(); // gọi ngắt kết nối trong AppController
+
+        uiManager_->SetToggleState(false);
+
+
+        appController_->Disconnect(); // gọi ngắt kết nối trong AppController
         uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
     }
 }
+
+*/
+void WindowManager::OnToggleClicked() {
+    if (!appController_ || !uiManager_) return;
+
+    // ✅ DÙNG TRẠNG THÁI TOGGLE HIỆN TẠI THAY VÌ TRẠNG THÁI MÁY IN
+    bool isToggleCurrentlyOn = uiManager_->IsToggleOn();
+
+    if (!isToggleCurrentlyOn) {
+        // TOGGLE ĐANG OFF → USER CLICK ĐỂ BẬT (KẾT NỐI)
+        std::wstring ip = uiManager_->GetIPAddress();
+        if (uiManager_->ValidateInput()) {
+            uiManager_->SetToggleState(true); // CẬP NHẬT SANG ON
+
+            appController_->Connect(ip);
+            uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip);
+        }
+        else {
+            uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ");
+            // KHÔNG CẬP NHẬT TOGGLE (GIỮ NGUYÊN OFF)
+        }
+    }
+    else {
+        // TOGGLE ĐANG ON → USER CLICK ĐỂ TẮT (NGẮT KẾT NỐI)
+        uiManager_->SetToggleState(false); // CẬP NHẬT SANG OFF
+
+        appController_->Disconnect();
+        uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
+    }
+}
+
+
 
 //vị trí gọi: khi nút upload được click.
 void WindowManager::OnUploadClicked() {

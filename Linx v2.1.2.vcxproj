@@ -149,6 +149,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MessageLogger.cpp" />
     <ClCompile Include="ModernButton.cpp" />
+    <ClCompile Include="PrinterCore.cpp" />
     <ClCompile Include="RciClient.cpp" />
     <ClCompile Include="ToggleSwitch.cpp" />
     <ClCompile Include="UIManager.cpp" />

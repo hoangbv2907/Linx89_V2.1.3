@@ -109,5 +109,8 @@
     <ClCompile Include="MessageLogger.cpp">
       <Filter>Header Files\UI\Controls</Filter>
     </ClCompile>
+    <ClCompile Include="PrinterCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

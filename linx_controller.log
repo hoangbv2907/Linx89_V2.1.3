@@ -273,3 +273,84 @@
 23:44:01.716 [INFO] UI controls created
 23:44:01.717 [INFO] Worker thread started
 23:44:01.759 [INFO] Application started successfully
+23:02:17.965 [INFO] Logger initialized
+23:02:17.977 [INFO] Linx Controller starting...
+23:02:17.978 [INFO] WindowManager initialized
+23:02:17.986 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:02:17.986 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:02:17.987 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:02:17.987 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:02:17.987 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:02:17.987 [INFO] AppController initialized with 5 cleanup tasks
+23:02:17.998 [INFO] UIManager initialized
+23:02:18.045 [INFO] UI controls created
+23:02:18.046 [INFO] Worker thread started
+23:02:18.149 [INFO] Application started successfully
+23:02:48.384 [INFO] Logger initialized
+23:02:48.384 [INFO] Linx Controller starting...
+23:02:48.385 [INFO] WindowManager initialized
+23:02:48.391 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:02:48.391 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:02:48.391 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:02:48.391 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:02:48.391 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:02:48.391 [INFO] AppController initialized with 5 cleanup tasks
+23:02:48.397 [INFO] UIManager initialized
+23:02:48.421 [INFO] UI controls created
+23:02:48.422 [INFO] Worker thread started
+23:02:48.459 [INFO] Application started successfully
+23:04:50.283 [ERROR] Worker thread stop timeout - emergency detach
+23:04:50.283 [INFO] Worker thread emergency detached
+23:04:50.951 [INFO] WorkerLoop exited normally
+23:16:11.650 [INFO] Logger initialized
+23:16:11.650 [INFO] Linx Controller starting...
+23:16:11.650 [INFO] WindowManager initialized
+23:16:11.656 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:16:11.657 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:16:11.657 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:16:11.657 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:16:11.657 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:16:11.657 [INFO] AppController initialized with 5 cleanup tasks
+23:16:11.666 [INFO] UIManager initialized
+23:16:11.693 [INFO] UI controls created
+23:16:11.693 [INFO] Worker thread started
+23:16:11.731 [INFO] Application started successfully
+23:16:13.181 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:16:16.577 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:16:17.941 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:16:21.240 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:16:33.801 [INFO] WorkerLoop exited normally
+23:16:33.802 [INFO] Worker thread stopped with timeout
+23:16:33.808 [INFO] Application shutting down
+23:16:36.308 [INFO] Logger initialized
+23:16:36.309 [INFO] Linx Controller starting...
+23:16:36.309 [INFO] WindowManager initialized
+23:16:36.315 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:16:36.315 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:16:36.316 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:16:36.316 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:16:36.316 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:16:36.316 [INFO] AppController initialized with 5 cleanup tasks
+23:16:36.323 [INFO] UIManager initialized
+23:16:36.347 [INFO] UI controls created
+23:16:36.348 [INFO] Worker thread started
+23:16:36.393 [INFO] Application started successfully
+23:16:38.427 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:16:41.814 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:18:09.400 [ERROR] Worker thread stop timeout - emergency detach
+23:18:09.417 [INFO] Worker thread emergency detached
+23:21:15.797 [INFO] Logger initialized
+23:21:15.798 [INFO] Linx Controller starting...
+23:21:15.798 [INFO] WindowManager initialized
+23:21:15.803 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:21:15.803 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:21:15.803 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:21:15.804 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:21:15.804 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:21:15.804 [INFO] AppController initialized with 5 cleanup tasks
+23:21:15.810 [INFO] UIManager initialized
+23:21:15.830 [INFO] UI controls created
+23:21:15.830 [INFO] Worker thread started
+23:21:15.868 [INFO] Application started successfully
+23:21:17.296 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:21:19.624 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
