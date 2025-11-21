@@ -2,10 +2,6 @@
 #include <string>
 #include <vector>
 
-//
-// UI / Application State Enum
-// (Đổi tên tránh trùng với PrinterStatus của RciClient)
-//
 enum class PrinterStateType {
     Disconnected,
     Connecting,

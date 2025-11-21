@@ -1,4 +1,4 @@
-﻿// ResourceTracker.h
+﻿
 #pragma once
 #include <functional>
 #include <vector>
