@@ -88,7 +88,7 @@ void UIManager::CreateControls() {
 
     // Cập nhật giao diện theo trạng thái ban đầu
     PrinterState initialState;
-    initialState.status = PrinterStatus::Disconnected;
+    initialState.status = PrinterStateType::Disconnected;
     initialState.statusText = L"Chưa kết nối";
     UpdateButtonStates(initialState);
 
@@ -122,22 +122,22 @@ void UIManager::UpdatePrinterUIState(PrinterState state) {
 
 	// Mapping PrinterState sang văn bản tiếng Việt
     switch (state.status) {
-    case PrinterStatus::Disconnected:
+    case PrinterStateType::Disconnected:
         stateText += L"NGẮT KẾT NỐI";
         break;
-    case PrinterStatus::Connecting:
+    case PrinterStateType::Connecting:
         stateText += L"ĐANG KẾT NỐI...";
         break;
-    case PrinterStatus::Connected:
+    case PrinterStateType::Connected:
         stateText += L"ĐÃ KẾT NỐI";
         break;
-    case PrinterStatus::Idle:
+    case PrinterStateType::Idle:
         stateText += L"SẴN SÀNG";
         break;
-    case PrinterStatus::Printing:
+    case PrinterStateType::Printing:
         stateText += L"ĐANG IN";
         break;
-    case PrinterStatus::Error:
+    case PrinterStateType::Error:
         stateText += L"LỖI";
         break;
     default:
@@ -155,7 +155,7 @@ void UIManager::UpdateButtonStates(PrinterState state) {
 	UpdateButtonStateForPrinterState(state);    // Cập nhật trạng thái nút dựa trên trạng thái máy in
     
     // Đồng bộ toggle với state thực tế
-    bool shouldBeOn = (state.status == PrinterStatus::Connected || state.status == PrinterStatus::Connecting);
+    bool shouldBeOn = (state.status == PrinterStateType::Connected || state.status == PrinterStateType::Connecting);
     // Toggle nên bật nếu máy in đã kết nối
 	if (isToggleOn_ != shouldBeOn) {    // Nếu trạng thái toggle không khớp với trạng thái thực tế
         Logger::GetInstance().Write(L"Toggle state changing: " +
@@ -176,25 +176,25 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state) {
 
 	// Xác định trạng thái nút dựa trên trạng thái máy in
     switch (state.status) {
-    case PrinterStatus::Disconnected:  
+    case PrinterStateType::Disconnected:
         uploadEnabled = true;
         setEnabled = true;
         break;
-    case PrinterStatus::Connected:
-    case PrinterStatus::Idle:
+    case PrinterStateType::Connected:
+    case PrinterStateType::Idle:
         uploadEnabled = true;
         startEnabled = true;
         printEnabled = true;
         stopEnabled = true;
         setEnabled = true;
         break;
-    case PrinterStatus::Printing:
+    case PrinterStateType::Printing:
         uploadEnabled = true;
         printEnabled = true;
         stopEnabled = true;
         setEnabled = true;
         break;
-    case PrinterStatus::Error:
+    case PrinterStateType::Error:
         uploadEnabled = true;
         clearEnabled = true;
         break;

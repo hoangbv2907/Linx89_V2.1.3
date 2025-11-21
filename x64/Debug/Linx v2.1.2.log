@@ -2,11 +2,11 @@
   main.cpp
   MessageLogger.cpp
   ModernButton.cpp
-  PrinterCore.cpp
   RciClient.cpp
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\RciClient.cpp(337,18): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
   ToggleSwitch.cpp
   UIManager.cpp
   WindowManager.cpp
   Generating Code...
-C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(152,1): warning C4715: 'WindowManager::HandleMessage': not all control paths return a value
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(153,1): warning C4715: 'WindowManager::HandleMessage': not all control paths return a value
   Linx v2.1.2.vcxproj -> C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\x64\Debug\Linx v2.1.2.exe

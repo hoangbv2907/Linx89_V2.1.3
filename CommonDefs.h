@@ -22,4 +22,4 @@
 
 // Forward declarations
 struct PrinterState;
-enum class PrinterStatus;
+enum class PrinterStatusType;

@@ -68,16 +68,10 @@
     <ClInclude Include="CommonDefs.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="PrinterCore.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="RequestQueue.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="CommonTypes.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="StateManager.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="ResourceTracker.h">
@@ -109,8 +103,8 @@
     <ClCompile Include="MessageLogger.cpp">
       <Filter>Header Files\UI\Controls</Filter>
     </ClCompile>
-    <ClCompile Include="PrinterCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

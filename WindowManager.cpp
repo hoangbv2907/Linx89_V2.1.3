@@ -11,7 +11,8 @@ WindowManager::~WindowManager() {
 
     // Gọi comprehensive cleanup
     if (appController_) {
-        appController_->ComprehensiveCleanup();
+        appController_->EmergencyCleanup();
+        appController_.reset();
     }
 
     // Cleanup UI components
@@ -241,6 +242,7 @@ void WindowManager::HandleButtonState(ButtonStateMessage* msg) {
 //Vị trí gọi: WM_DESTROY. Xử lý dọn dẹp khi cửa sổ bị đóng.
 //đảm bảo cleanup chỉ chạy 1 lần, threads stop trước khi quit.
 void WindowManager::HandleDestroy() {
+    /*
     Logger::GetInstance().Write(L"Main window destruction - starting cleanup");
 
 	static bool cleanupDone = false;    // đảm bảo cleanup chỉ chạy 1 lần
@@ -253,6 +255,20 @@ void WindowManager::HandleDestroy() {
     }
 
 	PostQuitMessage(0);     // gửi message thoát ứng dụng
+    */
+    Logger::GetInstance().Write(L"Main window destruction - starting cleanup");
+
+    static std::atomic<bool> destroyHandled{ false };
+    if (destroyHandled.exchange(true)) {
+        return;
+    }
+
+    // ✅ DỪNG CONTROLLER TRƯỚC KHI POST QUIT
+    if (appController_) {
+        appController_->StopWorkerThread(1000);
+    }
+
+    PostQuitMessage(0);
 }
 
 //vị trí gọi: khi toggle kết nối được click.

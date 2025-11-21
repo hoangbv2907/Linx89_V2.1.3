@@ -133,12 +133,10 @@
     <ClInclude Include="MessageDef.h" />
     <ClInclude Include="MessageLogger.h" />
     <ClInclude Include="ModernButton.h" />
-    <ClInclude Include="PrinterCore.h" />
     <ClInclude Include="PrinterModel.h" />
     <ClInclude Include="RciClient.h" />
     <ClInclude Include="RequestQueue.h" />
     <ClInclude Include="ResourceTracker.h" />
-    <ClInclude Include="StateManager.h" />
     <ClInclude Include="ThreadSafeQueue.h" />
     <ClInclude Include="ToggleSwitch.h" />
     <ClInclude Include="UIManager.h" />
@@ -149,11 +147,13 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MessageLogger.cpp" />
     <ClCompile Include="ModernButton.cpp" />
-    <ClCompile Include="PrinterCore.cpp" />
     <ClCompile Include="RciClient.cpp" />
     <ClCompile Include="ToggleSwitch.cpp" />
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="WindowManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

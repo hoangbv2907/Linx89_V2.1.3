@@ -3,12 +3,11 @@
 #include "CommonTypes.h"
 #include <mutex>
 
-
 class PrinterModel {
 public:
     PrinterModel() {
         // Khởi tạo currentState_ với giá trị mặc định
-        currentState_.status = PrinterStatus::Disconnected;
+        currentState_.status = PrinterStateType::Disconnected;
         currentState_.statusText = L"Chưa kết nối";
         currentState_.jetOn = false;
         currentState_.printing = false;
@@ -75,7 +74,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         lastError_ = error;
         currentState_.errorMessage = error;
-        currentState_.status = PrinterStatus::Error;
+        currentState_.status = PrinterStateType::Error;
     }
 
 	// Lấy lỗi cuối cùng
@@ -131,7 +130,7 @@ public:
     void SetPrintingState(bool isPrinting) {
         std::lock_guard<std::mutex> lock(mutex_);
         currentState_.printing = isPrinting;
-        currentState_.status = isPrinting ? PrinterStatus::Printing : PrinterStatus::Idle;
+        currentState_.status = isPrinting ? PrinterStateType::Printing : PrinterStateType::Idle;
     }
 
     // Thêm method để cập nhật trạng thái jet

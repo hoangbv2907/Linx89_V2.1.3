@@ -1,300 +1,482 @@
-﻿#include "RciClient.h"
-#include "Logger.h"
-#include <iostream>
-#include <algorithm>
-#include <WS2tcpip.h> // Thêm cho inet_pton
+﻿
+#include "RciClient.h"
+#include <thread>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+#include "AppController.h"
 
-RciClient::RciClient() {
-    InitializeWinsock();
+#include <iostream>  // THÊM DÒNG NÀY
+#include <string>    // THÊM DÒNG NÀY
+
+using namespace std;
+#pragma comment(lib, "Ws2_32.lib")
+// =========================================================
+// Constructor / Destructor
+// =========================================================
+RciClient::RciClient() : sock_(INVALID_SOCKET), connected_(false), port_(0) {
+    WSADATA wsa;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
 }
 
 RciClient::~RciClient() {
     Disconnect();
-    CleanupWinsock();
-}
-
-bool RciClient::InitializeWinsock() {
-    WSADATA wsaData;
-    WORD version = MAKEWORD(2, 2);
-    int result = WSAStartup(version, &wsaData);
-    if (result != 0) {
-        Logger::GetInstance().Write(L"WSAStartup failed: " + std::to_wstring(result), 2);
-        return false;
-    }
-
-    // Verify WinSock version 2.2
-    if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-        Logger::GetInstance().Write(L"WinSock version 2.2 not available", 2);
-        WSACleanup();
-        return false;
-    }
-
-    return true;
-}
-
-void RciClient::CleanupWinsock() {
     WSACleanup();
 }
-
-bool RciClient::Connect(const std::wstring& ip, int port) {
-    if (connected_) {
-        Disconnect();
+static std::wstring WsaErrorToString(int err) {
+    wchar_t* msg = nullptr;
+    FormatMessageW(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPWSTR)&msg, 0, NULL);
+    std::wstring out;
+    if (msg) {
+        out = msg;
+        LocalFree(msg);
     }
+    else {
+        std::wstringstream ss; ss << L"WSA error " << err;
+        out = ss.str();
+    }
+    return out;
+}
 
-    // Convert wide string to narrow string for IP address
-    int wideLen = (int)ip.length();
-    int narrowLen = WideCharToMultiByte(CP_UTF8, 0, ip.c_str(), wideLen, nullptr, 0, nullptr, nullptr);
-    std::string narrowIp(narrowLen, 0);
-    WideCharToMultiByte(CP_UTF8, 0, ip.c_str(), wideLen, &narrowIp[0], narrowLen, nullptr, nullptr);
+// =========================================================
+// Connection Management
+// =========================================================
 
-    socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (socket_ == INVALID_SOCKET) {
-        int error = WSAGetLastError();
-        Logger::GetInstance().Write(L"Socket creation failed, error: " + std::to_wstring(error), 2);
+bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeoutMs) {
+    std::lock_guard<std::mutex> lock(mtx_);
+
+    Disconnect();
+
+    host_ = ip;
+    port_ = port;
+    Log(L"🔌 [Connect] Bắt đầu kết nối đến " + ip + L":" + std::to_wstring(port), 1);
+    SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (s == INVALID_SOCKET) {
+        Log(L"❌ Không thể tạo socket", 2);
         return false;
     }
 
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(port);
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
 
-    // Use inet_pton for IP address conversion
-    if (inet_pton(AF_INET, narrowIp.c_str(), &serverAddr.sin_addr) != 1) {
-        Logger::GetInstance().Write(L"Invalid IP address: " + ip, 2);
-        closesocket(socket_);
-        socket_ = INVALID_SOCKET;
+    char ipUtf8[64];
+    WideCharToMultiByte(CP_ACP, 0, ip.c_str(), -1, ipUtf8, sizeof(ipUtf8), NULL, NULL);
+
+    if (inet_pton(AF_INET, ipUtf8, &addr.sin_addr) <= 0) {
+        Log(L"❌ Địa chỉ IP không hợp lệ", 2);
+        closesocket(s);
         return false;
     }
 
-    // Set timeout
-    DWORD timeout = 5000; // 5 seconds
-    setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-    setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
-
-    if (connect(socket_, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        int error = WSAGetLastError();
-        Logger::GetInstance().Write(L"Connection failed to " + ip + L":" + std::to_wstring(port) +
-            L", error: " + std::to_wstring(error), 2);
-        closesocket(socket_);
-        socket_ = INVALID_SOCKET;
-        return false;
+    u_long mode = 1; ioctlsocket(s, FIONBIO, &mode);
+    int res = connect(s, (sockaddr*)&addr, sizeof(addr));
+    if (res == SOCKET_ERROR) {
+        int err = WSAGetLastError();
+        if (err != WSAEWOULDBLOCK) {
+            closesocket(s);
+            Log(L"❌ Kết nối thất bại", 2);
+            return false;
+        }
     }
 
+    fd_set set; FD_ZERO(&set); FD_SET(s, &set);
+    timeval tv; tv.tv_sec = timeoutMs / 1000; tv.tv_usec = (timeoutMs % 1000) * 1000;
+
+    res = select(0, NULL, &set, NULL, &tv);
+    if (res <= 0) {
+        closesocket(s);
+        Log(L"⏰ Timeout kết nối", 2);
+        return false;
+    }
+    // kiểm tra lỗi socket thực sự
+    int so_err = 0;
+    int optlen = sizeof(so_err);
+    if (getsockopt(s, SOL_SOCKET, SO_ERROR, (char*)&so_err, &optlen) == 0) {
+        if (so_err != 0) {
+            closesocket(s);
+            std::wstringstream ss; ss << L"❌ Kết nối thất bại (SO_ERROR=" << so_err << L")";
+            Log(ss.str(), 2);
+            return false;
+        }
+    }
+    mode = 0; ioctlsocket(s, FIONBIO, &mode);
+    sock_ = s;
     connected_ = true;
-    currentIp_ = ip;
-    currentPort_ = port;
 
-    // Start background reader thread
-    running_ = true;
-    readerThread_ = std::thread(&RciClient::ReaderLoop, this);
+    return true;
+}
+/*
 
-    Logger::GetInstance().Write(L"Connected to " + ip + L":" + std::to_wstring(port));
+void RciClient::Disconnect() {
+    std::lock_guard<std::mutex> lock(mtx_);
+    DisconnectInternal();
+}
+*/
+// ==========================
+// RciClient.cpp
+// ==========================
+
+bool RciClient::Disconnect()
+{
+    // Ngắt kết nối logic
+    bool wasConnected = connected_.exchange(false);
+    if (!wasConnected)
+        return true;
+
+    SOCKET localSock = INVALID_SOCKET;
+
+    // ⚡ Chỉ lấy socket ra (nếu có thể lock), KHÔNG đợi mutex lâu
+    if (mtx_.try_lock()) {
+        localSock = sock_;
+        sock_ = INVALID_SOCKET;
+        mtx_.unlock();
+    }
+    else {
+        Log(L"⚠️ [Disconnect] Mutex busy, sẽ force-close socket", 2);
+        localSock = sock_;
+        sock_ = INVALID_SOCKET;
+    }
+
+    // 🧩 Tắt socket ngoài mutex để tránh deadlock
+    if (localSock != INVALID_SOCKET) {
+        ::shutdown(localSock, SD_BOTH);
+        ::closesocket(localSock);
+        Log(L"🔌 [Disconnect] Socket closed (safe immediate)", 1);
+    }
+
     return true;
 }
 
-void RciClient::Disconnect() {
-    running_ = false;
-    connected_ = false;
 
-    if (readerThread_.joinable()) {
-        readerThread_.join();  // ✅ Đợi thread kết thúc
-    }
-
-    if (socket_ != INVALID_SOCKET) {
-        shutdown(socket_, SD_BOTH);  // ✅ Ngừng nhận/gửi
-        closesocket(socket_);        // ✅ Đóng socket
-        socket_ = INVALID_SOCKET;
-    }
-    Logger::GetInstance().Write(L"Disconnected from printer");
+bool RciClient::IsConnected() const {
+    return connected_;
 }
 
-void RciClient::ReaderLoop() {
-    std::vector<uint8_t> buffer(4096);
+// =========================================================
+// Send / Receive
+// =========================================================
+bool RciClient::SendFrame(const vector<uint8_t>& frame, vector<uint8_t>& reply, int timeoutMs) {
+    std::lock_guard<std::mutex> lock(mtx_);
 
-    while (running_ && connected_) {
-        fd_set readSet;
-        FD_ZERO(&readSet);
-        FD_SET(socket_, &readSet);
-
-        timeval timeout{ 0, 100000 }; // 100ms
-
-        int result = select(0, &readSet, nullptr, nullptr, &timeout);
-        if (result > 0 && FD_ISSET(socket_, &readSet)) {
-            int bytesReceived = recv(socket_, (char*)buffer.data(), (int)buffer.size(), 0);
-            if (bytesReceived > 0) {
-                // Process received data
-                std::wstring message = L"Received " + std::to_wstring(bytesReceived) + L" bytes from printer";
-                Log(message, 3); // Debug level
-
-                // Parse printer response if needed
-                std::wstring response;
-                if (ParseRciResponse(buffer, response)) {
-                    Log(L"Printer response: " + response, 3);
-                }
-            }
-            else if (bytesReceived == 0) {
-                Log(L"Printer disconnected", 1);
-                connected_ = false;
-                break;
-            }
-            else {
-                int error = WSAGetLastError();
-                if (error != WSAEWOULDBLOCK) {
-                    Log(L"Socket error: " + std::to_wstring(error), 2);
-                    connected_ = false;
-                    break;
-                }
-            }
-        }
+    if (!connected_ || sock_ == INVALID_SOCKET)
+        return false;
+    //Kiểm tra kết nối trước khi gửi
+    if (!IsConnected()) {
+        return false;
     }
-}
+    // 🟢 TĂNG hiệu suất gửi
+    u_long mode = 1; // non-blocking
+    ioctlsocket(sock_, FIONBIO, &mode);
 
-bool RciClient::SendData(const std::vector<uint8_t>& data) {
-    if (!connected_) return false;
-
-    int bytesSent = send(socket_, (const char*)data.data(), (int)data.size(), 0);
-    if (bytesSent == SOCKET_ERROR) {
-        int error = WSAGetLastError();
-        Log(L"Send data failed, error: " + std::to_wstring(error), 2);
-        connected_ = false;
+    if (!SendRaw(frame)) {
+        mode = 0; // blocking
+        ioctlsocket(sock_, FIONBIO, &mode);
         return false;
     }
 
-    return bytesSent == data.size();
+    bool result = ReceiveRaw(reply, timeoutMs);
+
+    mode = 0; // blocking
+    ioctlsocket(sock_, FIONBIO, &mode);
+
+    return result;
 }
 
-bool RciClient::StartJet() {
-    Log(L"Sending StartJet command to printer");
-
-    // Simulate RCI command - in real implementation, send actual RCI frame
-    std::wstring command = L"\x02STARTJET\x03";
-    auto frame = BuildRciFrame(command);
-
-    if (SendData(frame)) {
-        Log(L"StartJet command sent successfully");
-        return true;
+bool RciClient::SendRaw(const vector<uint8_t>& buf) {
+    int sent = send(sock_, (const char*)buf.data(), (int)buf.size(), 0);
+    if (sent == SOCKET_ERROR) {
+        Log(L"❌ Lỗi gửi dữ liệu", 2);
+        return false;
     }
-
-    return false;
+    return true;
 }
 
-bool RciClient::StopJet() {
-    Log(L"Sending StopJet command to printer");
+bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs) {
+    buf.clear();
+    const int CHUNK = 1024;
+    char tmp[CHUNK];
 
-    // Simulate RCI command - in real implementation, send actual RCI frame
-    std::wstring command = L"\x02STOPJET\x03";
-    auto frame = BuildRciFrame(command);
+    // tổng timeout xử lý theo vòng lặp
+    auto t0 = std::chrono::steady_clock::now();
+    int remaining = timeoutMs;
 
-    if (SendData(frame)) {
-        Log(L"StopJet command sent successfully");
-        return true;
-    }
+    // buffer tạm để tìm kết thúc frame
+    std::vector<uint8_t> acc;
 
-    return false;
-}
+    if (!connected_) return false;
 
-bool RciClient::PrintText(const std::wstring& text, int copies) {
-    Log(L"Printing text: " + text + L" copies: " + std::to_wstring(copies));
-
-    // Simulate printing process
-    for (int i = 0; i < copies; i++) {
-        std::wstring copyMsg = L"Printing copy " + std::to_wstring(i + 1) + L" of " + std::to_wstring(copies);
-        Log(copyMsg);
-
-        // In real implementation, send actual print command
-        std::wstring command = L"\x02PRINT\x03" + text;
-        auto frame = BuildRciFrame(command);
-
-        if (!SendData(frame)) {
-            Log(L"Failed to send print data for copy " + std::to_wstring(i + 1), 2);
+    while (true) {
+        if (!connected_ || sock_ == INVALID_SOCKET) {
+            Log(L"🧩 Socket đã bị đóng — thoát ReceiveRaw()", 1);
             return false;
         }
 
-        // Small delay between copies
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+        fd_set set;
+        FD_ZERO(&set);
+        FD_SET(sock_, &set);
+        timeval tv;
+        tv.tv_sec = remaining / 1000;
+        tv.tv_usec = (remaining % 1000) * 1000;
 
-    Log(L"Print job completed successfully");
-    return true;
+        int res = select(0, &set, NULL, NULL, &tv);
+        if (res == SOCKET_ERROR) {
+            Log(L"❌ Lỗi select, socket không hợp lệ", 2);
+            connected_ = false;
+            return false;
+        }
+
+        if (res == 0) { // timeout
+            if (!connected_) return false;
+            continue;
+        }
+
+        // socket đã sẵn sàng
+        int received = recv(sock_, tmp, CHUNK, 0);
+        if (received <= 0) {
+            Log(L"🔌 Socket đóng hoặc mất kết nối (recv <= 0)", 2);
+            connected_ = false;
+            return false;
+        }
+    }
 }
 
-bool RciClient::GetStatusEx(std::wstring& status) {
-    if (!connected_) {
-        status = L"DISCONNECTED";
-        return false;
-    }
-
-    // Simulate status request
-    std::wstring command = L"\x02STATUS\x03";
-    auto frame = BuildRciFrame(command);
-
-    if (SendData(frame)) {
-        // In real implementation, wait for and parse response
-        status = L"READY";
-        return true;
-    }
-
-    status = L"ERROR";
-    return false;
+// =========================================================
+// RCI Command Builders
+// =========================================================
+uint8_t RciClient::ComputeChecksum(const vector<uint8_t>& bytes) {
+    unsigned int sum = 0;
+    for (auto b : bytes) sum += b;
+    return (uint8_t)((0x100 - (sum & 0xFF)) & 0xFF);
 }
 
-bool RciClient::SendCustomCommand(const std::wstring& command) {
-    Log(L"Sending custom command: " + command);
+vector<uint8_t> RciClient::BuildFrame(uint8_t commandId, const vector<uint8_t>& payload, bool useSOH, bool includeChecksum) {
+    vector<uint8_t> frame;
+    const uint8_t ESC = 0x1B, STX = 0x02, SOH = 0x01, ETX = 0x03;
 
-    auto frame = BuildRciFrame(command);
-    return SendData(frame);
-}
+    frame.push_back(ESC);
+    frame.push_back(useSOH ? SOH : STX);
 
-std::vector<uint8_t> RciClient::BuildRciFrame(const std::wstring& command) {
-    // Convert wide string to UTF-8
-    int wideLen = (int)command.length();
-    int narrowLen = WideCharToMultiByte(CP_UTF8, 0, command.c_str(), wideLen, nullptr, 0, nullptr, nullptr);
-    std::string narrowCommand(narrowLen, 0);
-    WideCharToMultiByte(CP_UTF8, 0, command.c_str(), wideLen, &narrowCommand[0], narrowLen, nullptr, nullptr);
+    vector<uint8_t> body;
+    body.push_back(commandId);
+    body.insert(body.end(), payload.begin(), payload.end());
 
-    std::vector<uint8_t> frame;
-
-    // Start with STX
-    frame.push_back(0x02);
-
-    // Add command bytes
-    for (char c : narrowCommand) {
-        frame.push_back(static_cast<uint8_t>(c));
+    for (auto b : body) {
+        if (b == ESC || b == STX || b == SOH || b == ETX) {
+            frame.push_back(ESC);
+            frame.push_back(b);
+        }
+        else {
+            frame.push_back(b);
+        }
     }
 
-    // End with ETX
-    frame.push_back(0x03);
+    frame.push_back(ESC);
+    frame.push_back(ETX);
 
-    // Calculate checksum (simple XOR for example)
-    uint8_t checksum = 0;
-    for (uint8_t byte : frame) {
-        checksum ^= byte;
+    if (includeChecksum) {
+        vector<uint8_t> csData;
+        csData.push_back(useSOH ? SOH : STX);
+        csData.insert(csData.end(), body.begin(), body.end());
+        csData.push_back(ETX);
+        frame.push_back(ComputeChecksum(csData));
     }
-    frame.push_back(checksum);
 
     return frame;
 }
 
-bool RciClient::ParseRciResponse(const std::vector<uint8_t>& data, std::wstring& result) {
-    if (data.empty()) {
-        return false;
+// =========================================================
+// High-level LINX Commands
+// =========================================================
+bool RciClient::RequestStatus() {
+    vector<uint8_t> reply;
+    auto frame = BuildFrame(0x14);
+    return SendFrame(frame, reply);
+}
+
+bool RciClient::StartPrint() {
+    vector<uint8_t> reply;
+    auto frame = BuildFrame(0x11);
+    return SendFrame(frame, reply);
+}
+
+bool RciClient::StopPrint() {
+    vector<uint8_t> reply;
+    auto frame = BuildFrame(0x12);
+    return SendFrame(frame, reply);
+}
+
+bool RciClient::StartJet() {
+    vector<uint8_t> reply;
+    auto frame = BuildFrame(0x0F);
+    return SendFrame(frame, reply);
+}
+bool RciClient::StopJet() {
+    vector<uint8_t> reply;
+    auto frame = BuildFrame(0x10);
+    return SendFrame(frame, reply);
+}
+
+bool RciClient::LoadMessage(const string& name, uint16_t printCount) {
+    vector<uint8_t> payload;
+    string fixed = name;
+    fixed.resize(8, '\0');
+    payload.insert(payload.end(), fixed.begin(), fixed.end());
+    payload.push_back(printCount & 0xFF);
+    payload.push_back((printCount >> 8) & 0xFF);
+
+    vector<uint8_t> reply;
+    return SendFrame(BuildFrame(0x1E, payload), reply);
+}
+
+bool RciClient::DownloadRemoteField(const vector<uint8_t>& data) {
+    vector<uint8_t> payload;
+    uint16_t len = data.size();
+    payload.push_back(len & 0xFF);
+    payload.push_back((len >> 8) & 0xFF);
+    payload.insert(payload.end(), data.begin(), data.end());
+
+    vector<uint8_t> reply;
+    return SendFrame(BuildFrame(0x1D, payload), reply);
+}
+
+bool RciClient::DownloadMessageData(const vector<uint8_t>& data) {
+    vector<uint8_t> reply;
+    return SendFrame(BuildFrame(0x19, data), reply);
+}
+
+// =========================================================
+// Extended high-level utilities for AppController
+// =========================================================
+bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payload, int timeoutMs)
+{
+    if (timeoutMs <= 0) {
+        if (cmdid == 0x0F || cmdid == 0x10) timeoutMs = 60000;
+        else timeoutMs = 3000;
     }
 
-    // Simple parsing - convert bytes back to wide string
-    std::string narrowResult;
-    for (size_t i = 0; i < data.size(); ++i) {
-        uint8_t byte = data[i];
-        // Skip control characters in display
-        if (byte >= 32 && byte <= 126) { // Printable ASCII
-            narrowResult += static_cast<char>(byte);
+    std::vector<uint8_t> reply;
+    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs))
+        return false;
+
+    Log(L"Recv: " + ReplyToString(reply), 1);
+
+    if (reply.size() < 5) return false;
+    const uint8_t ESC = 0x1B, ACK = 0x06, NAK = 0x15;
+
+    if (reply[0] != ESC) return false;
+
+    if (reply[1] == NAK) return false;
+    if (reply[1] != ACK) return false;
+
+    // --- parse frame body robustly: find delimiter (STX or SOH) at offset 1 already known? ---
+    // find first STX or SOH (reply[1] is ACK, so STX/SOH is not here) 
+    // We need to extract the body bytes between delimiter and ESC ETX.
+    // Find the first occurrence of ESC + ETX from the end.
+    size_t esc_etx_pos = std::string::npos;
+    for (size_t i = 0; i + 1 < reply.size(); ++i) {
+        if (reply[i] == 0x1B && reply[i + 1] == 0x03) { esc_etx_pos = i; break; }
+    }
+    if (esc_etx_pos == std::string::npos) {
+        // cannot find end marker, fallback to previous simple check
+        uint8_t recvCmd = reply.size() > 4 ? reply[4] : 0x00;
+        return recvCmd == cmdid;
+    }
+
+    // body is bytes between reply[2] ... before esc_etx_pos
+    // But need to unescape bytes (ESC prefix)
+    std::vector<uint8_t> body;
+    // body starts at index 2 (p-status at [2])
+    for (size_t i = 2; i < esc_etx_pos; ++i) {
+        if (reply[i] == 0x1B) {
+            if (i + 1 < esc_etx_pos) {
+                body.push_back(reply[i + 1]);
+                ++i;
+            }
+            else {
+                // malformed escape, break
+                return false;
+            }
+        }
+        else {
+            body.push_back(reply[i]);
         }
     }
 
-    // Convert narrow string to wide string
-    int narrowLen = (int)narrowResult.length();
-    int wideLen = MultiByteToWideChar(CP_UTF8, 0, narrowResult.c_str(), narrowLen, nullptr, 0);
-    result.resize(wideLen);
-    MultiByteToWideChar(CP_UTF8, 0, narrowResult.c_str(), narrowLen, &result[0], wideLen);
+    // body layout: [p_status, c_status, cmdid, ...]
+    if (body.size() < 3) return false;
+    uint8_t recvCmd = body[2];
 
-    return true;
+    // verify checksum: compute over (ACK) + body + ETX
+    std::vector<uint8_t> csArea;
+    csArea.push_back(reply[1]); // ACK or NAK byte
+    // append raw body (unescaped) but the protocol checksum computed on unescaped body bytes
+    csArea.insert(csArea.end(), body.begin(), body.end());
+    csArea.push_back(0x03); // ETX
+    uint8_t expected = ComputeChecksum(csArea);
+
+    // determine received checksum (after ESC ETX)
+    // position after esc_etx_pos + 2
+    size_t after_etx = esc_etx_pos + 2;
+    if (after_etx >= reply.size()) return false;
+    uint8_t recvChk = 0;
+    if (reply[after_etx] == 0x1B) {
+        if (after_etx + 1 >= reply.size()) return false;
+        recvChk = reply[after_etx + 1];
+    }
+    else {
+        recvChk = reply[after_etx];
+    }
+    if (recvChk != expected) {
+        Log(L"⚠ Checksum mismatch on reply", 1);
+        return false;
+    }
+
+    return recvCmd == cmdid;
+}
+
+
+PrinterStatus RciClient::RequestStatusEx() {
+    std::vector<uint8_t> reply;
+    PrinterStatus s;
+
+    if (!IsConnected()) return s;
+
+    if (!SendFrame(BuildFrame(0x14), reply, 100))
+        return s;
+
+    const uint8_t ESC = 0x1B, ACK = 0x06;
+    if (reply.size() >= 13 && reply[0] == ESC && reply[1] == ACK) {
+        s.jetState = reply[5];
+        s.printState = reply[6];
+        s.errorMask = (reply[7] << 24) | (reply[8] << 16) | (reply[9] << 8) | reply[10];
+
+        s.jetOn = (s.jetState != 0x03); // 03 = tắt jet
+        s.printing = (s.printState == 0x04); // 04 = đang in
+        s.paused = (s.printState == 0x02); // 02 = tạm dừng
+    }
+    return s;
+}
+// =========================================================
+// Utility
+// =========================================================
+void RciClient::Log(const std::wstring& msg, int type) {
+    if (callback_) callback_(msg, type);
+}
+
+std::wstring RciClient::ReplyToString(const vector<uint8_t>& reply) {
+    wstringstream ws;
+    ws << L"[" << reply.size() << L" bytes] ";
+    for (size_t i = 0; i < min(reply.size(), size_t(12)); ++i)
+        ws << hex << setw(2) << setfill(L'0') << (int)reply[i] << L" ";
+    return ws.str();
+}
+
+bool RciClient::SendCommandNoAck(uint8_t cmdid, const std::vector<uint8_t>& payload) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    std::vector<uint8_t> frame = BuildFrame(cmdid, payload);
+    return SendRaw(frame);
 }

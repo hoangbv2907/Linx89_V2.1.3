@@ -1,9 +1,12 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 
-// Printer Status Enum
-enum class PrinterStatus {
+//
+// UI / Application State Enum
+// (Đổi tên tránh trùng với PrinterStatus của RciClient)
+//
+enum class PrinterStateType {
     Disconnected,
     Connecting,
     Connected,
@@ -13,7 +16,9 @@ enum class PrinterStatus {
     Unknown
 };
 
+//
 // Request Types
+//
 enum class RequestType {
     RequestStatus,
     RequestPrintCount,
@@ -26,34 +31,41 @@ enum class RequestType {
     RequestDisconnect
 };
 
-// Printer State Structure
+//
+// Printer State Structure (lưu trong PrinterModel)
+//
 struct PrinterState {
-    PrinterStatus status = PrinterStatus::Disconnected;
+    PrinterStateType status = PrinterStateType::Disconnected;
+
     bool jetOn = false;
     bool printing = false;
+
     int printedCount = 0;
     int targetCount = 0;
+
     std::wstring jobId;
     std::wstring errorMessage;
     std::wstring statusText;
 
     // Helper methods
     bool IsConnected() const {
-        return status == PrinterStatus::Connected ||
-            status == PrinterStatus::Idle ||
-            status == PrinterStatus::Printing;
+        return status == PrinterStateType::Connected ||
+            status == PrinterStateType::Idle ||
+            status == PrinterStateType::Printing;
     }
 
     bool CanPrint() const {
-        return IsConnected() && status != PrinterStatus::Error;
+        return IsConnected() && status != PrinterStateType::Error;
     }
 };
 
+//
 // Request Structure
+//
 struct Request {
     RequestType type;
     std::vector<uint8_t> payload;
-    std::wstring data; // For text data like print content
+    std::wstring data;      // message text
     int count = 0;
-    std::wstring ipAddress;
+    std::wstring ipAddress; // not used but kept for compatibility
 };
