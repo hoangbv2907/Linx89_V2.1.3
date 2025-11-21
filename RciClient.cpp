@@ -109,13 +109,7 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
 
     return true;
 }
-/*
 
-void RciClient::Disconnect() {
-    std::lock_guard<std::mutex> lock(mtx_);
-    DisconnectInternal();
-}
-*/
 // ==========================
 // RciClient.cpp
 // ==========================
