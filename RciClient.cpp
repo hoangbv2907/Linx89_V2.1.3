@@ -46,13 +46,29 @@ static std::wstring WsaErrorToString(int err) {
 // =========================================================
 
 bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeoutMs) {
-    std::lock_guard<std::mutex> lock(mtx_);
+    // 1. Đảm bảo bất kỳ kết nối cũ nào cũng được đóng bên ngoài mutex
+    SOCKET oldSock = INVALID_SOCKET;
 
-    Disconnect();
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
 
-    host_ = ip;
-    port_ = port;
+        if (connected_ || sock_ != INVALID_SOCKET) {
+            // đánh dấu disconnect
+            connected_ = false;
+            oldSock = sock_;
+            sock_ = INVALID_SOCKET;
+        }
+    }
+
+    if (oldSock != INVALID_SOCKET) {
+        ::shutdown(oldSock, SD_BOTH);
+        ::closesocket(oldSock);
+        Log(L"🔌 [Connect] Đã đóng kết nối cũ trước khi mở kết nối mới", 1);
+    }
+
+    // 2. Tạo socket mới
     Log(L"🔌 [Connect] Bắt đầu kết nối đến " + ip + L":" + std::to_wstring(port), 1);
+
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s == INVALID_SOCKET) {
         Log(L"❌ Không thể tạo socket", 2);
@@ -63,7 +79,7 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
 
-    char ipUtf8[64];
+    char ipUtf8[64] = {};
     WideCharToMultiByte(CP_ACP, 0, ip.c_str(), -1, ipUtf8, sizeof(ipUtf8), NULL, NULL);
 
     if (inet_pton(AF_INET, ipUtf8, &addr.sin_addr) <= 0) {
@@ -72,41 +88,66 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
         return false;
     }
 
-    u_long mode = 1; ioctlsocket(s, FIONBIO, &mode);
+    // 3. Đặt non-blocking tạm thời để dùng select()
+    u_long mode = 1;
+    ioctlsocket(s, FIONBIO, &mode);
+
     int res = connect(s, (sockaddr*)&addr, sizeof(addr));
     if (res == SOCKET_ERROR) {
         int err = WSAGetLastError();
-        if (err != WSAEWOULDBLOCK) {
+
+        // Cho phép WSAEWOULDBLOCK / WSAEINPROGRESS / WSAEALREADY
+        if (err != WSAEWOULDBLOCK && err != WSAEINPROGRESS && err != WSAEALREADY) {
+            std::wstringstream ss;
+            ss << L"❌ connect() thất bại, WSAError=" << err << L" (" << WsaErrorToString(err) << L")";
+            Log(ss.str(), 2);
             closesocket(s);
-            Log(L"❌ Kết nối thất bại", 2);
             return false;
         }
     }
 
-    fd_set set; FD_ZERO(&set); FD_SET(s, &set);
-    timeval tv; tv.tv_sec = timeoutMs / 1000; tv.tv_usec = (timeoutMs % 1000) * 1000;
+    // 4. Chờ socket sẵn sàng ghi (kết nối thành công)
+    fd_set wset;
+    FD_ZERO(&wset);
+    FD_SET(s, &wset);
 
-    res = select(0, NULL, &set, NULL, &tv);
-    if (res <= 0) {
-        closesocket(s);
+    timeval tv;
+    tv.tv_sec = timeoutMs / 1000;
+    tv.tv_usec = (timeoutMs % 1000) * 1000;
+
+    res = select(0, NULL, &wset, NULL, &tv);
+    if (res <= 0 || !FD_ISSET(s, &wset)) {
         Log(L"⏰ Timeout kết nối", 2);
+        closesocket(s);
         return false;
     }
-    // kiểm tra lỗi socket thực sự
+
+    // 5. Kiểm tra lỗi chậm bằng SO_ERROR
     int so_err = 0;
     int optlen = sizeof(so_err);
     if (getsockopt(s, SOL_SOCKET, SO_ERROR, (char*)&so_err, &optlen) == 0) {
         if (so_err != 0) {
-            closesocket(s);
-            std::wstringstream ss; ss << L"❌ Kết nối thất bại (SO_ERROR=" << so_err << L")";
+            std::wstringstream ss;
+            ss << L"❌ Kết nối thất bại (SO_ERROR=" << so_err << L")";
             Log(ss.str(), 2);
+            closesocket(s);
             return false;
         }
     }
-    mode = 0; ioctlsocket(s, FIONBIO, &mode);
-    sock_ = s;
-    connected_ = true;
 
+    // 6. Trả socket về blocking
+    mode = 0;
+    ioctlsocket(s, FIONBIO, &mode);
+
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        sock_ = s;
+        host_ = ip;
+        port_ = port;
+        connected_ = true;
+    }
+
+    Log(L"✅ Kết nối thành công", 1);
     return true;
 }
 
@@ -114,37 +155,29 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
 // RciClient.cpp
 // ==========================
 
-bool RciClient::Disconnect()
-{
-    // Ngắt kết nối logic
-    bool wasConnected = connected_.exchange(false);
-    if (!wasConnected)
-        return true;
-
+bool RciClient::Disconnect() {
     SOCKET localSock = INVALID_SOCKET;
 
-    // ⚡ Chỉ lấy socket ra (nếu có thể lock), KHÔNG đợi mutex lâu
-    if (mtx_.try_lock()) {
-        localSock = sock_;
-        sock_ = INVALID_SOCKET;
-        mtx_.unlock();
-    }
-    else {
-        Log(L"⚠️ [Disconnect] Mutex busy, sẽ force-close socket", 2);
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+
+        if (!connected_ && sock_ == INVALID_SOCKET) {
+            return true; // không có gì để ngắt
+        }
+
+        connected_ = false;
         localSock = sock_;
         sock_ = INVALID_SOCKET;
     }
 
-    // 🧩 Tắt socket ngoài mutex để tránh deadlock
     if (localSock != INVALID_SOCKET) {
         ::shutdown(localSock, SD_BOTH);
         ::closesocket(localSock);
-        Log(L"🔌 [Disconnect] Socket closed (safe immediate)", 1);
+        Log(L"🔌 [Disconnect] Socket closed", 1);
     }
 
     return true;
 }
-
 
 bool RciClient::IsConnected() const {
     return connected_;
@@ -189,51 +222,54 @@ bool RciClient::SendRaw(const vector<uint8_t>& buf) {
     return true;
 }
 
-bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs) {
+bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
+{
     buf.clear();
-    const int CHUNK = 1024;
-    char tmp[CHUNK];
 
-    // tổng timeout xử lý theo vòng lặp
-    auto t0 = std::chrono::steady_clock::now();
-    int remaining = timeoutMs;
+    if (!connected_ || sock_ == INVALID_SOCKET)
+        return false;
 
-    // buffer tạm để tìm kết thúc frame
-    std::vector<uint8_t> acc;
+    auto start = std::chrono::steady_clock::now();
+    vector<uint8_t> acc;
 
-    if (!connected_) return false;
+    while (true)
+    {
+        // timeout
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > timeoutMs)
+            return false;
 
-    while (true) {
-        if (!connected_ || sock_ == INVALID_SOCKET) {
-            Log(L"🧩 Socket đã bị đóng — thoát ReceiveRaw()", 1);
+        fd_set r;
+        FD_ZERO(&r);
+        FD_SET(sock_, &r);
+        timeval tv{ 0, 100000 }; // 100ms
+
+        int s = select(0, &r, NULL, NULL, &tv);
+        if (s == SOCKET_ERROR)
+        {
+            connected_ = false;
             return false;
         }
+        if (s == 0) continue; // no data yet
 
-        fd_set set;
-        FD_ZERO(&set);
-        FD_SET(sock_, &set);
-        timeval tv;
-        tv.tv_sec = remaining / 1000;
-        tv.tv_usec = (remaining % 1000) * 1000;
-
-        int res = select(0, &set, NULL, NULL, &tv);
-        if (res == SOCKET_ERROR) {
-            Log(L"❌ Lỗi select, socket không hợp lệ", 2);
+        char tmp[1024];
+        int n = recv(sock_, tmp, sizeof(tmp), 0);
+        if (n <= 0)
+        {
             connected_ = false;
             return false;
         }
 
-        if (res == 0) { // timeout
-            if (!connected_) return false;
-            continue;
-        }
+        acc.insert(acc.end(), tmp, tmp + n);
 
-        // socket đã sẵn sàng
-        int received = recv(sock_, tmp, CHUNK, 0);
-        if (received <= 0) {
-            Log(L"🔌 Socket đóng hoặc mất kết nối (recv <= 0)", 2);
-            connected_ = false;
-            return false;
+        // Check for ESC ETX -> end of frame
+        for (size_t i = 0; i + 1 < acc.size(); ++i)
+        {
+            if (acc[i] == 0x1B && acc[i + 1] == 0x03)
+            {
+                buf = acc;
+                return true;
+            }
         }
     }
 }

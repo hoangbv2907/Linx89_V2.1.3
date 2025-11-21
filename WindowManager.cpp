@@ -11,7 +11,6 @@ WindowManager::~WindowManager() {
 
     // Gọi comprehensive cleanup
     if (appController_) {
-        appController_->EmergencyCleanup();
         appController_.reset();
     }
 
@@ -141,16 +140,14 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
 
     case WM_DESTROY:            //xử lý dọn dẹp khi cửa sổ bị đóng
-        if (appController_) {
-            appController_->StopWorkerThread(200);
-            PostQuitMessage(0);
-            return 0;
+        HandleDestroy();
+        return 0;
 
     default:
         return DefWindowProc(hwnd_, msg, wParam, lParam);
-        }
     }
 }
+
 
 //Vị trí gọi: WM_CREATE. tạo control và khởi động thread AppController.
 void WindowManager::HandleCreate() {
@@ -242,20 +239,6 @@ void WindowManager::HandleButtonState(ButtonStateMessage* msg) {
 //Vị trí gọi: WM_DESTROY. Xử lý dọn dẹp khi cửa sổ bị đóng.
 //đảm bảo cleanup chỉ chạy 1 lần, threads stop trước khi quit.
 void WindowManager::HandleDestroy() {
-    /*
-    Logger::GetInstance().Write(L"Main window destruction - starting cleanup");
-
-	static bool cleanupDone = false;    // đảm bảo cleanup chỉ chạy 1 lần
-	if (!cleanupDone) {                 // nếu chưa cleanup
-		cleanupDone = true;             // đánh dấu đã cleanup
-
-		if (appController_) {           // nếu AppController tồn tại
-			appController_->ComprehensiveCleanup();// gọi comprehensive cleanup
-        }
-    }
-
-	PostQuitMessage(0);     // gửi message thoát ứng dụng
-    */
     Logger::GetInstance().Write(L"Main window destruction - starting cleanup");
 
     static std::atomic<bool> destroyHandled{ false };
@@ -273,66 +256,40 @@ void WindowManager::HandleDestroy() {
 
 //vị trí gọi: khi toggle kết nối được click.
 //xử lý event người dùng → gọi AppController + update UI.
-/*
 void WindowManager::OnToggleClicked() {
-    if (!appController_ || !uiManager_) return;     // kiểm tra AppController và UIManager tồn tại
 
-    PrinterState currentState = appController_->GetCurrentState();  // lấy trạng thái máy in hiện tại
-    // nếu đang disconnected → kết nối
-    if (currentState.status == PrinterStatus::Disconnected) {
-        std::wstring ip = uiManager_->GetIPAddress();   // lấy địa chỉ IP từ UI
-        if (uiManager_->ValidateInput()) {      // kiểm tra địa chỉ IP hợp lệ
-
-            uiManager_->SetToggleState(true);
-
-            appController_->Connect(ip);        // gọi kết nối trong AppController
-            uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip);
-        }
-        else {
-            uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ");
-            uiManager_->SetToggleState(false); // Reset toggle về off
-        }
-    }
-    else {
-
-        uiManager_->SetToggleState(false);
-
-
-        appController_->Disconnect(); // gọi ngắt kết nối trong AppController
-        uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
-    }
-}
-
-*/
-void WindowManager::OnToggleClicked() {
     if (!appController_ || !uiManager_) return;
 
-    // ✅ DÙNG TRẠNG THÁI TOGGLE HIỆN TẠI THAY VÌ TRẠNG THÁI MÁY IN
     bool isToggleCurrentlyOn = uiManager_->IsToggleOn();
 
     if (!isToggleCurrentlyOn) {
-        // TOGGLE ĐANG OFF → USER CLICK ĐỂ BẬT (KẾT NỐI)
+        // User muốn KẾT NỐI
         std::wstring ip = uiManager_->GetIPAddress();
-        if (uiManager_->ValidateInput()) {
-            uiManager_->SetToggleState(true); // CẬP NHẬT SANG ON
-
-            appController_->Connect(ip);
-            uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip);
-        }
-        else {
+        if (!uiManager_->ValidateInput()) {
             uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ");
-            // KHÔNG CẬP NHẬT TOGGLE (GIỮ NGUYÊN OFF)
+            return;
         }
+
+        // 🔥 FIX 1 — LƯU IP NGAY TẠI UI (trước WorkerLoop tick)
+        appController_->SetLastIp(ip);
+
+        // 🔥 FIX 2 — TẮT AUTO RECONNECT TRƯỚC KHI CONNECT
+        // (Không cần hàm riêng, gọi trực tiếp)
+        appController_->DisableAutoReconnect();
+
+        uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip + L"...");
+        uiManager_->AddMessage(L"[DEBUG] Push connect request");
+
+        // Gửi yêu cầu connect
+        appController_->Connect(ip);
     }
     else {
-        // TOGGLE ĐANG ON → USER CLICK ĐỂ TẮT (NGẮT KẾT NỐI)
-        uiManager_->SetToggleState(false); // CẬP NHẬT SANG OFF
-
-        appController_->Disconnect();
+        // User muốn NGẮT KẾT NỐI
+        uiManager_->SetToggleState(false);
         uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
+        appController_->Disconnect();
     }
 }
-
 
 
 //vị trí gọi: khi nút upload được click.

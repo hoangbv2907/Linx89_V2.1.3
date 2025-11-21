@@ -46,11 +46,12 @@ public:
 	//===== Validation methods ===
 	bool ValidatePrintContent(const std::wstring& content);
 	bool ValidatePrintCount(int count);
-
+	void DisableAutoReconnect() { autoReconnect_ = false; }
+	void EnableAutoReconnect() { autoReconnect_ = true; }
 	//======= Getter methods =====
 	PrinterState GetCurrentState() const; //Lấy trạng thái đang lưu trong PrinterModel
 	bool IsConnected() const;            //Kiểm tra trạng thái kết nối từ RciClient
-
+	void SetLastIp(const std::wstring& ip);
 	//================= WORKER THREAD MANAGEMENT =================
 	void StartWorkerThread();               //khởi động worker thread
 	bool StopWorkerThread(int timeoutMs);   //dừng worker thread với timeout
