@@ -524,6 +524,7 @@ void AppController::HandleRequest(const Request& request) {
 // ================== REQUEST HANDLERS ==================
 
 void AppController::HandleDisconnectRequest() {
+    DisableAutoReconnect();
     if (rciClient_) {
         rciClient_->Disconnect();
     }
@@ -540,6 +541,12 @@ void AppController::HandleDisconnectRequest() {
 
 // Poll định kỳ
 void AppController::DoPeriodicPoll() {
+
+    if (!rciClient_ || !rciClient_->IsConnected()) {
+        // socket chết → WorkerLoop sẽ lo reconnect
+        return;
+    }
+
     HandleStatusRequest();
 
     if (ShouldGetPrintCount()) {
@@ -559,6 +566,9 @@ void AppController::HandleStatusRequest() {
         return;
 
     PrinterStatus raw = rciClient_->RequestStatusEx();
+    if (!rciClient_->IsConnected()) {
+        return; // socket chết, dừng poll
+    }
 
     // Text mô tả tình trạng
     std::wstring text =
@@ -694,40 +704,65 @@ void AppController::HandleStopJetRequest() {
 }
 
 
-void AppController::HandleConnectRequest(const Request& req) {
-    DisableAutoReconnect();
-
+void AppController::HandleConnectRequest(const Request& req)
+{
+    // UI: Đang kết nối
     PrinterState s = printerModel_->GetState();
     s.status = PrinterStateType::Connecting;
     s.statusText = L"Đang kết nối...";
     printerModel_->SetState(s);
+    printerModel_->SetStatusText(s.statusText);
     SendStateUpdate();
 
-    // Lưu IP trước khi connect
+    // Lưu IP
     printerModel_->SetConnectionInfo(req.data, 9100);
-
-    SendLogMessage(L"[DEBUG] HandleConnectRequest ENTER", 1);
-    SendLogMessage(L"🔌 Đang kết nối tới " + req.data + L":9100...", 1);
 
     bool ok = rciClient_->Connect(req.data, 9100, 3000);
 
     PrinterState st = printerModel_->GetState();
 
-    if (ok) {
-        reconnectAttempts_ = 0;
-        st.status = PrinterStateType::Connected;
-        st.statusText = L"Đã kết nối";
-        SendLogMessage(L"✅ Đã kết nối", 1);
-    }
-    else {
+    if (!ok)
+    {
+        //-------------------------------------------------------
+        // PHẢI BẬT LẠI AUTORECONNECT
+        //-------------------------------------------------------
+        EnableAutoReconnect();
+
+        // Nếu đang autoReconnect và còn số lần thử
+        if (autoReconnect_ && reconnectAttempts_ < MAX_RECONNECT_ATTEMPTS)
+        {
+            // Reset trạng thái để WorkerLoop cho phép AutoReconnect tiếp
+            PrinterState failState = printerModel_->GetState();
+            failState.status = PrinterStateType::Disconnected;
+            failState.statusText = L"Retry...";
+            printerModel_->SetState(failState);
+
+            return;
+        }
+
+        // Hết số lần retry → báo lỗi 1 lần
         st.status = PrinterStateType::Error;
         st.statusText = L"Lỗi kết nối";
+        printerModel_->SetState(st);
+        printerModel_->SetStatusText(st.statusText);
+
         SendLogMessage(L"❌ Không thể kết nối", 2);
+        SendStateUpdate();
+        SendConnectionUpdate(false);
+        return;
     }
 
+    // ==== Nếu kết nối thành công ====
+    reconnectAttempts_ = 0;
+
+    st.status = PrinterStateType::Connected;
+    st.statusText = L"Đã kết nối";
     printerModel_->SetState(st);
+    printerModel_->SetStatusText(st.statusText);
+
+    SendLogMessage(L"✅ Đã kết nối", 1);
     SendStateUpdate();
-    SendConnectionUpdate(ok);
+    SendConnectionUpdate(true);
 
     EnableAutoReconnect();
 }
@@ -776,12 +811,21 @@ bool AppController::ShouldAutoStartJet() const {
         printerModel_->HasPendingPrintJob();
 }
 
-void AppController::UpdatePrinterState() {
+void AppController::UpdatePrinterState()
+{
     auto currentState = printerModel_->GetState();
 
-    if (!rciClient_ || !rciClient_->IsConnected()) {
+    if (!rciClient_ || !rciClient_->IsConnected()) 
+    {
+        // 🛑 Nếu đang autoReconnect → KHÔNG đổi màu UI
+        if (autoReconnect_ && reconnectAttempts_ < MAX_RECONNECT_ATTEMPTS) {
+            return;  // giữ màu vàng, không đẩy UI sang xám
+        }
+
         if (currentState.status != PrinterStateType::Disconnected &&
             currentState.status != PrinterStateType::Connecting) {
+
+            SendLogMessage(L"🔌 Mất kết nối với máy in", 2);
 
             PrinterState disconnectedState;
             disconnectedState.status = PrinterStateType::Disconnected;
@@ -789,9 +833,14 @@ void AppController::UpdatePrinterState() {
             disconnectedState.jetOn = false;
             disconnectedState.printing = false;
             printerModel_->SetState(disconnectedState);
+
+            SendStateUpdate();
         }
+        return;
     }
 }
+
+
 
 // ================== THREAD-SAFE UI UPDATES ==================
 

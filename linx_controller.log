@@ -739,3 +739,836 @@
 23:46:45.725 [INFO] HandlePrinterUpdate: status=2
 23:46:45.725 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
 23:46:45.728 [INFO] HandlePrinterUpdate: status=2
+21:41:10.768 [INFO] Logger initialized
+21:41:10.777 [INFO] Linx Controller starting...
+21:41:10.779 [INFO] WindowManager initialized
+21:41:10.788 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+21:41:10.789 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+21:41:10.789 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+21:41:10.789 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+21:41:10.789 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+21:41:10.789 [INFO] AppController initialized with 5 cleanup tasks
+21:41:10.800 [INFO] UIManager initialized
+21:41:10.895 [INFO] UI controls created
+21:41:10.895 [INFO] Worker thread started
+21:41:11.003 [INFO] Application started successfully
+21:44:23.223 [INFO] HandlePrinterUpdate: status=1
+21:44:23.254 [INFO] HandlePrinterUpdate: status=2
+21:44:23.254 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+21:44:23.259 [INFO] HandlePrinterUpdate: status=2
+21:44:49.083 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:44:49.390 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:44:49.392 [INFO] HandlePrinterUpdate: status=0
+21:44:51.981 [INFO] HandlePrinterUpdate: status=1
+21:44:51.990 [INFO] HandlePrinterUpdate: status=2
+21:44:51.991 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+21:44:51.993 [INFO] HandlePrinterUpdate: status=2
+21:44:55.509 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:44:55.914 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:44:55.917 [INFO] HandlePrinterUpdate: status=0
+21:44:58.489 [INFO] HandlePrinterUpdate: status=1
+21:44:58.497 [INFO] HandlePrinterUpdate: status=2
+21:44:58.497 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+21:44:58.500 [INFO] HandlePrinterUpdate: status=2
+21:45:00.091 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:45:00.129 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:45:00.132 [INFO] HandlePrinterUpdate: status=0
+21:45:02.701 [INFO] HandlePrinterUpdate: status=1
+21:45:02.708 [INFO] HandlePrinterUpdate: status=2
+21:45:02.708 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+21:45:02.710 [INFO] HandlePrinterUpdate: status=2
+21:45:05.524 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:45:05.527 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+21:45:05.529 [INFO] HandlePrinterUpdate: status=0
+21:45:08.110 [INFO] HandlePrinterUpdate: status=1
+21:45:08.118 [INFO] HandlePrinterUpdate: status=2
+21:45:08.118 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+21:45:08.121 [INFO] HandlePrinterUpdate: status=2
+22:04:31.316 [INFO] Logger initialized
+22:04:31.336 [INFO] Linx Controller starting...
+22:04:31.338 [INFO] WindowManager initialized
+22:04:31.344 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:04:31.344 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:04:31.344 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:04:31.345 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:04:31.345 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:04:31.345 [INFO] AppController initialized with 5 cleanup tasks
+22:04:31.376 [INFO] UIManager initialized
+22:04:31.556 [INFO] UI controls created
+22:04:31.556 [INFO] Worker thread started
+22:04:31.626 [INFO] Application started successfully
+22:04:38.458 [INFO] HandlePrinterUpdate: status=1
+22:04:38.493 [INFO] HandlePrinterUpdate: status=2
+22:04:38.494 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:04:38.500 [INFO] HandlePrinterUpdate: status=2
+22:04:41.410 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:04:41.663 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:04:41.666 [INFO] HandlePrinterUpdate: status=0
+22:04:45.011 [INFO] HandlePrinterUpdate: status=1
+22:04:45.026 [INFO] HandlePrinterUpdate: status=2
+22:04:45.026 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:04:45.032 [INFO] HandlePrinterUpdate: status=2
+22:04:46.239 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:04:46.658 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:04:46.661 [INFO] HandlePrinterUpdate: status=0
+22:04:50.033 [INFO] HandlePrinterUpdate: status=1
+22:04:50.051 [INFO] HandlePrinterUpdate: status=2
+22:04:50.052 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:04:50.058 [INFO] HandlePrinterUpdate: status=2
+22:06:15.545 [INFO] Logger initialized
+22:06:15.554 [INFO] Linx Controller starting...
+22:06:15.555 [INFO] WindowManager initialized
+22:06:15.562 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:06:15.563 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:06:15.563 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:06:15.563 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:06:15.563 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:06:15.564 [INFO] AppController initialized with 5 cleanup tasks
+22:06:15.581 [INFO] UIManager initialized
+22:06:15.632 [INFO] UI controls created
+22:06:15.633 [INFO] Worker thread started
+22:06:15.692 [INFO] Application started successfully
+22:06:17.377 [INFO] HandlePrinterUpdate: status=1
+22:06:17.409 [INFO] HandlePrinterUpdate: status=2
+22:06:17.411 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:06:17.425 [INFO] HandlePrinterUpdate: status=2
+22:07:18.214 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:07:18.502 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:07:18.505 [INFO] HandlePrinterUpdate: status=0
+22:07:20.713 [INFO] HandlePrinterUpdate: status=1
+22:07:20.724 [INFO] HandlePrinterUpdate: status=2
+22:07:20.725 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:07:20.730 [INFO] HandlePrinterUpdate: status=2
+22:07:26.992 [INFO] HandlePrinterUpdate: status=3
+22:07:34.938 [INFO] HandlePrinterUpdate: status=3
+22:11:36.511 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:11:36.517 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:11:36.520 [INFO] HandlePrinterUpdate: status=0
+22:11:37.608 [INFO] HandlePrinterUpdate: status=1
+22:11:37.623 [INFO] HandlePrinterUpdate: status=2
+22:11:37.623 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:11:37.629 [INFO] HandlePrinterUpdate: status=2
+22:11:51.601 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:11:51.832 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:11:51.835 [INFO] HandlePrinterUpdate: status=0
+22:11:52.914 [INFO] HandlePrinterUpdate: status=1
+22:11:52.930 [INFO] HandlePrinterUpdate: status=2
+22:11:52.931 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:11:52.935 [INFO] HandlePrinterUpdate: status=2
+22:11:54.649 [INFO] Main window destruction - starting cleanup
+22:11:55.128 [INFO] WorkerLoop exited normally
+22:11:55.129 [INFO] Worker thread stopped with timeout
+22:11:55.183 [INFO] Application shutting down
+22:12:07.871 [INFO] Logger initialized
+22:12:07.872 [INFO] Linx Controller starting...
+22:12:07.872 [INFO] WindowManager initialized
+22:12:07.880 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:12:07.881 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:12:07.881 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:12:07.881 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:12:07.881 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:12:07.882 [INFO] AppController initialized with 5 cleanup tasks
+22:12:07.924 [INFO] UIManager initialized
+22:12:07.955 [INFO] UI controls created
+22:12:07.955 [INFO] Worker thread started
+22:12:08.019 [INFO] Application started successfully
+22:12:09.149 [INFO] HandlePrinterUpdate: status=1
+22:12:12.163 [INFO] HandlePrinterUpdate: status=5
+22:12:12.163 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:12.166 [INFO] HandlePrinterUpdate: status=5
+22:12:14.730 [INFO] HandlePrinterUpdate: status=1
+22:12:17.746 [INFO] HandlePrinterUpdate: status=5
+22:12:17.746 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:17.750 [INFO] HandlePrinterUpdate: status=5
+22:12:20.312 [INFO] HandlePrinterUpdate: status=1
+22:12:23.322 [INFO] HandlePrinterUpdate: status=5
+22:12:23.323 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:23.326 [INFO] HandlePrinterUpdate: status=5
+22:12:25.931 [INFO] HandlePrinterUpdate: status=1
+22:12:28.932 [INFO] HandlePrinterUpdate: status=5
+22:12:28.933 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:28.940 [INFO] HandlePrinterUpdate: status=5
+22:12:31.502 [INFO] HandlePrinterUpdate: status=1
+22:12:34.547 [INFO] HandlePrinterUpdate: status=5
+22:12:34.547 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:34.553 [INFO] HandlePrinterUpdate: status=5
+22:12:37.089 [INFO] HandlePrinterUpdate: status=1
+22:12:40.094 [INFO] HandlePrinterUpdate: status=5
+22:12:40.094 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:12:40.102 [INFO] HandlePrinterUpdate: status=5
+22:30:39.719 [INFO] Logger initialized
+22:30:39.727 [INFO] Linx Controller starting...
+22:30:39.727 [INFO] WindowManager initialized
+22:30:39.735 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:30:39.736 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:30:39.736 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:30:39.736 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:30:39.736 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:30:39.736 [INFO] AppController initialized with 5 cleanup tasks
+22:30:39.756 [INFO] UIManager initialized
+22:30:39.816 [INFO] UI controls created
+22:30:39.816 [INFO] Worker thread started
+22:30:39.978 [INFO] Application started successfully
+22:30:43.831 [INFO] HandlePrinterUpdate: status=1
+22:30:46.849 [INFO] HandlePrinterUpdate: status=5
+22:30:46.849 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:30:46.853 [INFO] HandlePrinterUpdate: status=5
+22:31:03.320 [INFO] HandlePrinterUpdate: status=1
+22:31:06.326 [INFO] HandlePrinterUpdate: status=5
+22:31:06.326 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:31:06.330 [INFO] HandlePrinterUpdate: status=5
+22:31:20.010 [INFO] HandlePrinterUpdate: status=1
+22:31:23.011 [INFO] HandlePrinterUpdate: status=5
+22:31:23.012 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:31:23.017 [INFO] HandlePrinterUpdate: status=5
+22:31:44.135 [INFO] Main window destruction - starting cleanup
+22:31:44.621 [INFO] WorkerLoop exited normally
+22:31:44.621 [INFO] Worker thread stopped with timeout
+22:31:44.646 [INFO] Application shutting down
+22:32:28.853 [INFO] Logger initialized
+22:32:28.863 [INFO] Linx Controller starting...
+22:32:28.864 [INFO] WindowManager initialized
+22:32:28.872 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:32:28.872 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:32:28.872 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:32:28.872 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:32:28.872 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:32:28.873 [INFO] AppController initialized with 5 cleanup tasks
+22:32:28.887 [INFO] UIManager initialized
+22:32:28.941 [INFO] UI controls created
+22:32:28.941 [INFO] Worker thread started
+22:32:29.015 [INFO] Application started successfully
+22:32:30.669 [INFO] HandlePrinterUpdate: status=1
+22:32:30.710 [INFO] HandlePrinterUpdate: status=1
+22:32:30.711 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:32:30.722 [INFO] HandlePrinterUpdate: status=1
+22:32:46.308 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:32:46.609 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:32:46.612 [INFO] HandlePrinterUpdate: status=0
+22:32:47.739 [INFO] HandlePrinterUpdate: status=1
+22:32:47.747 [INFO] HandlePrinterUpdate: status=1
+22:32:47.747 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:32:47.749 [INFO] HandlePrinterUpdate: status=1
+22:32:55.217 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:32:55.677 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:32:55.678 [INFO] HandlePrinterUpdate: status=0
+22:32:57.885 [INFO] HandlePrinterUpdate: status=1
+22:32:57.892 [INFO] HandlePrinterUpdate: status=1
+22:32:57.892 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:32:57.894 [INFO] HandlePrinterUpdate: status=1
+22:33:41.195 [INFO] Logger initialized
+22:33:41.204 [INFO] Linx Controller starting...
+22:33:41.205 [INFO] WindowManager initialized
+22:33:41.213 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:33:41.214 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:33:41.214 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:33:41.214 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:33:41.214 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:33:41.215 [INFO] AppController initialized with 5 cleanup tasks
+22:33:41.231 [INFO] UIManager initialized
+22:33:41.282 [INFO] UI controls created
+22:33:41.282 [INFO] Worker thread started
+22:33:41.350 [INFO] Application started successfully
+22:33:42.998 [INFO] HandlePrinterUpdate: status=1
+22:33:43.023 [INFO] HandlePrinterUpdate: status=1
+22:33:43.023 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:33:43.028 [INFO] HandlePrinterUpdate: status=1
+22:34:53.836 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:34:54.343 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:34:54.348 [INFO] HandlePrinterUpdate: status=0
+22:34:58.275 [INFO] HandlePrinterUpdate: status=1
+22:34:58.287 [INFO] HandlePrinterUpdate: status=1
+22:34:58.288 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:34:58.291 [INFO] HandlePrinterUpdate: status=1
+22:35:00.049 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:35:00.498 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:35:00.501 [INFO] HandlePrinterUpdate: status=0
+22:35:03.289 [INFO] HandlePrinterUpdate: status=1
+22:35:03.300 [INFO] HandlePrinterUpdate: status=1
+22:35:03.300 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:35:03.303 [INFO] HandlePrinterUpdate: status=1
+22:35:06.876 [INFO] Main window destruction - starting cleanup
+22:35:07.221 [INFO] WorkerLoop exited normally
+22:35:07.221 [INFO] Worker thread stopped with timeout
+22:35:07.244 [INFO] Application shutting down
+22:35:12.933 [INFO] Logger initialized
+22:35:12.933 [INFO] Linx Controller starting...
+22:35:12.934 [INFO] WindowManager initialized
+22:35:12.956 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:35:12.956 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:35:12.957 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:35:12.957 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:35:12.958 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:35:12.959 [INFO] AppController initialized with 5 cleanup tasks
+22:35:12.982 [INFO] UIManager initialized
+22:35:13.020 [INFO] UI controls created
+22:35:13.020 [INFO] Worker thread started
+22:35:13.076 [INFO] Application started successfully
+22:35:18.748 [INFO] HandlePrinterUpdate: status=1
+22:35:18.772 [INFO] HandlePrinterUpdate: status=1
+22:35:18.772 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:35:18.777 [INFO] HandlePrinterUpdate: status=1
+22:35:21.863 [INFO] Main window destruction - starting cleanup
+22:35:22.117 [INFO] WorkerLoop exited normally
+22:35:22.118 [INFO] Worker thread stopped with timeout
+22:35:22.131 [INFO] Application shutting down
+22:35:41.446 [INFO] Logger initialized
+22:35:41.446 [INFO] Linx Controller starting...
+22:35:41.446 [INFO] WindowManager initialized
+22:35:41.456 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:35:41.457 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:35:41.457 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:35:41.457 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:35:41.457 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:35:41.458 [INFO] AppController initialized with 5 cleanup tasks
+22:35:41.468 [INFO] UIManager initialized
+22:35:41.508 [INFO] UI controls created
+22:35:41.509 [INFO] Worker thread started
+22:35:41.568 [INFO] Application started successfully
+22:35:43.802 [INFO] HandlePrinterUpdate: status=1
+22:35:43.825 [INFO] HandlePrinterUpdate: status=1
+22:35:43.825 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:35:43.830 [INFO] HandlePrinterUpdate: status=1
+22:36:32.983 [INFO] Main window destruction - starting cleanup
+22:36:33.348 [INFO] WorkerLoop exited normally
+22:36:33.349 [INFO] Worker thread stopped with timeout
+22:36:33.356 [INFO] Application shutting down
+22:44:31.930 [INFO] Logger initialized
+22:44:31.930 [INFO] Linx Controller starting...
+22:44:31.930 [INFO] WindowManager initialized
+22:44:31.938 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:44:31.938 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:44:31.938 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:44:31.939 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:44:31.939 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:44:31.939 [INFO] AppController initialized with 5 cleanup tasks
+22:44:31.947 [INFO] UIManager initialized
+22:44:31.984 [INFO] UI controls created
+22:44:31.984 [INFO] Worker thread started
+22:44:32.030 [INFO] Application started successfully
+22:44:33.723 [INFO] HandlePrinterUpdate: status=1
+22:44:36.761 [INFO] HandlePrinterUpdate: status=5
+22:44:36.762 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:44:36.766 [INFO] HandlePrinterUpdate: status=5
+22:44:48.627 [INFO] HandlePrinterUpdate: status=1
+22:44:51.632 [INFO] HandlePrinterUpdate: status=5
+22:44:51.633 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:44:51.636 [INFO] HandlePrinterUpdate: status=5
+22:45:24.706 [INFO] HandlePrinterUpdate: status=1
+22:45:27.716 [INFO] HandlePrinterUpdate: status=5
+22:45:27.717 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:45:27.721 [INFO] HandlePrinterUpdate: status=5
+22:45:37.393 [INFO] HandlePrinterUpdate: status=1
+22:45:37.400 [INFO] HandlePrinterUpdate: status=2
+22:45:37.401 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:45:37.405 [INFO] HandlePrinterUpdate: status=2
+22:45:44.317 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:45:44.756 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:45:44.758 [INFO] HandlePrinterUpdate: status=0
+22:45:45.846 [INFO] HandlePrinterUpdate: status=1
+22:45:45.854 [INFO] HandlePrinterUpdate: status=2
+22:45:45.854 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:45:45.859 [INFO] HandlePrinterUpdate: status=2
+22:45:47.084 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:45:47.495 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:45:47.498 [INFO] HandlePrinterUpdate: status=0
+22:45:48.583 [INFO] HandlePrinterUpdate: status=1
+22:45:48.593 [INFO] HandlePrinterUpdate: status=2
+22:45:48.594 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:45:48.599 [INFO] HandlePrinterUpdate: status=2
+22:46:38.839 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:46:39.254 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:46:39.257 [INFO] HandlePrinterUpdate: status=0
+22:46:54.046 [INFO] HandlePrinterUpdate: status=1
+22:46:54.055 [INFO] HandlePrinterUpdate: status=2
+22:46:54.055 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:46:54.060 [INFO] HandlePrinterUpdate: status=2
+22:46:56.786 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:46:56.844 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:46:56.845 [INFO] HandlePrinterUpdate: status=0
+22:46:59.614 [INFO] HandlePrinterUpdate: status=1
+22:46:59.621 [INFO] HandlePrinterUpdate: status=2
+22:46:59.621 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+22:46:59.624 [INFO] HandlePrinterUpdate: status=2
+22:47:11.099 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:47:11.504 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+22:47:11.508 [INFO] HandlePrinterUpdate: status=0
+23:04:37.881 [INFO] Logger initialized
+23:04:37.882 [INFO] Linx Controller starting...
+23:04:37.882 [INFO] WindowManager initialized
+23:04:37.889 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:04:37.890 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:04:37.890 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:04:37.890 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:04:37.890 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:04:37.891 [INFO] AppController initialized with 5 cleanup tasks
+23:04:37.903 [INFO] UIManager initialized
+23:04:37.968 [INFO] UI controls created
+23:04:37.968 [INFO] Worker thread started
+23:04:38.023 [INFO] Application started successfully
+23:04:40.283 [INFO] HandlePrinterUpdate: status=1
+23:04:43.299 [INFO] HandlePrinterUpdate: status=5
+23:04:43.299 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:04:43.304 [INFO] HandlePrinterUpdate: status=5
+23:04:50.083 [INFO] HandlePrinterUpdate: status=1
+23:04:53.092 [INFO] HandlePrinterUpdate: status=5
+23:04:53.093 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:04:53.097 [INFO] HandlePrinterUpdate: status=5
+23:04:54.739 [INFO] HandlePrinterUpdate: status=1
+23:04:57.748 [INFO] HandlePrinterUpdate: status=5
+23:04:57.748 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:04:57.753 [INFO] HandlePrinterUpdate: status=5
+23:05:00.528 [INFO] HandlePrinterUpdate: status=1
+23:05:03.531 [INFO] HandlePrinterUpdate: status=5
+23:05:03.532 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:03.536 [INFO] HandlePrinterUpdate: status=5
+23:05:09.172 [INFO] HandlePrinterUpdate: status=1
+23:05:12.186 [INFO] HandlePrinterUpdate: status=5
+23:05:12.186 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:12.191 [INFO] HandlePrinterUpdate: status=5
+23:05:40.735 [INFO] HandlePrinterUpdate: status=1
+23:05:40.752 [INFO] HandlePrinterUpdate: status=2
+23:05:40.752 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:05:40.757 [INFO] HandlePrinterUpdate: status=2
+23:05:47.259 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:47.515 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:47.516 [INFO] HandlePrinterUpdate: status=0
+23:05:50.310 [INFO] HandlePrinterUpdate: status=1
+23:05:50.317 [INFO] HandlePrinterUpdate: status=2
+23:05:50.318 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:05:50.321 [INFO] HandlePrinterUpdate: status=2
+23:05:53.273 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:53.667 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:05:53.669 [INFO] HandlePrinterUpdate: status=0
+23:05:54.747 [INFO] HandlePrinterUpdate: status=1
+23:05:54.764 [INFO] HandlePrinterUpdate: status=2
+23:05:54.764 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:05:54.767 [INFO] HandlePrinterUpdate: status=2
+23:05:58.762 [INFO] HandlePrinterUpdate: status=0
+23:06:01.315 [INFO] HandlePrinterUpdate: status=1
+23:06:04.332 [INFO] HandlePrinterUpdate: status=5
+23:06:04.332 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:06:04.335 [INFO] HandlePrinterUpdate: status=5
+23:12:54.651 [INFO] Logger initialized
+23:12:54.652 [INFO] Linx Controller starting...
+23:12:54.653 [INFO] WindowManager initialized
+23:12:54.762 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:12:54.851 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:12:54.986 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:12:55.059 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:12:55.090 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:12:55.147 [INFO] AppController initialized with 5 cleanup tasks
+23:12:55.550 [INFO] UIManager initialized
+23:12:55.603 [INFO] UI controls created
+23:12:55.603 [INFO] Worker thread started
+23:12:55.713 [INFO] Application started successfully
+23:12:58.220 [INFO] HandlePrinterUpdate: status=1
+23:13:01.228 [INFO] HandlePrinterUpdate: status=1
+23:13:26.287 [INFO] HandlePrinterUpdate: status=1
+23:13:26.294 [INFO] HandlePrinterUpdate: status=2
+23:13:26.294 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:13:26.297 [INFO] HandlePrinterUpdate: status=2
+23:13:30.131 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:13:30.220 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:13:30.222 [INFO] HandlePrinterUpdate: status=0
+23:13:31.302 [INFO] HandlePrinterUpdate: status=1
+23:13:31.308 [INFO] HandlePrinterUpdate: status=2
+23:13:31.308 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:13:31.311 [INFO] HandlePrinterUpdate: status=2
+23:13:34.582 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:13:34.690 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:13:34.692 [INFO] HandlePrinterUpdate: status=0
+23:13:38.037 [INFO] HandlePrinterUpdate: status=1
+23:13:38.045 [INFO] HandlePrinterUpdate: status=2
+23:13:38.045 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:13:38.048 [INFO] HandlePrinterUpdate: status=2
+23:13:41.484 [INFO] HandlePrinterUpdate: status=0
+23:13:44.048 [INFO] HandlePrinterUpdate: status=1
+23:13:47.053 [INFO] HandlePrinterUpdate: status=1
+23:16:57.696 [INFO] Logger initialized
+23:16:57.697 [INFO] Linx Controller starting...
+23:16:57.697 [INFO] WindowManager initialized
+23:16:57.713 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:16:57.714 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:16:57.714 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:16:57.715 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:16:57.716 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:16:57.716 [INFO] AppController initialized with 5 cleanup tasks
+23:16:57.762 [INFO] UIManager initialized
+23:16:57.911 [INFO] UI controls created
+23:16:57.912 [INFO] Worker thread started
+23:16:58.019 [INFO] Application started successfully
+23:17:00.419 [INFO] HandlePrinterUpdate: status=1
+23:17:03.442 [INFO] HandlePrinterUpdate: status=1
+23:17:09.693 [INFO] HandlePrinterUpdate: status=1
+23:17:12.707 [INFO] HandlePrinterUpdate: status=1
+23:17:22.938 [INFO] HandlePrinterUpdate: status=1
+23:17:22.947 [INFO] HandlePrinterUpdate: status=2
+23:17:22.948 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:17:22.951 [INFO] HandlePrinterUpdate: status=2
+23:17:26.173 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:17:26.312 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:17:26.314 [INFO] HandlePrinterUpdate: status=0
+23:17:29.122 [INFO] HandlePrinterUpdate: status=1
+23:17:29.128 [INFO] HandlePrinterUpdate: status=2
+23:17:29.128 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:17:29.131 [INFO] HandlePrinterUpdate: status=2
+23:17:32.553 [INFO] HandlePrinterUpdate: status=0
+23:17:35.129 [INFO] HandlePrinterUpdate: status=1
+23:17:38.139 [INFO] HandlePrinterUpdate: status=1
+23:20:32.258 [INFO] Logger initialized
+23:20:32.259 [INFO] Linx Controller starting...
+23:20:32.259 [INFO] WindowManager initialized
+23:20:32.267 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:20:32.267 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:20:32.267 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:20:32.267 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:20:32.268 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:20:32.268 [INFO] AppController initialized with 5 cleanup tasks
+23:20:32.293 [INFO] UIManager initialized
+23:20:32.322 [INFO] UI controls created
+23:20:32.323 [INFO] Worker thread started
+23:20:32.367 [INFO] Application started successfully
+23:20:47.761 [INFO] HandlePrinterUpdate: status=1
+23:20:50.803 [INFO] HandlePrinterUpdate: status=0
+23:20:53.343 [INFO] HandlePrinterUpdate: status=1
+23:20:53.362 [INFO] HandlePrinterUpdate: status=2
+23:20:53.362 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:20:53.371 [INFO] HandlePrinterUpdate: status=2
+23:21:08.265 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:21:08.765 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:21:08.767 [INFO] HandlePrinterUpdate: status=0
+23:21:11.635 [INFO] HandlePrinterUpdate: status=1
+23:21:11.645 [INFO] HandlePrinterUpdate: status=2
+23:21:11.645 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:21:11.650 [INFO] HandlePrinterUpdate: status=2
+23:21:16.205 [INFO] HandlePrinterUpdate: status=0
+23:21:18.775 [INFO] HandlePrinterUpdate: status=1
+23:21:21.786 [INFO] HandlePrinterUpdate: status=0
+23:21:24.364 [INFO] HandlePrinterUpdate: status=1
+23:21:27.366 [INFO] HandlePrinterUpdate: status=0
+23:21:29.945 [INFO] HandlePrinterUpdate: status=1
+23:21:32.953 [INFO] HandlePrinterUpdate: status=0
+23:21:35.541 [INFO] HandlePrinterUpdate: status=1
+23:21:38.554 [INFO] HandlePrinterUpdate: status=0
+23:21:41.130 [INFO] HandlePrinterUpdate: status=1
+23:21:44.148 [INFO] HandlePrinterUpdate: status=5
+23:21:44.148 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:21:44.153 [INFO] HandlePrinterUpdate: status=5
+23:26:05.898 [INFO] Logger initialized
+23:26:05.898 [INFO] Linx Controller starting...
+23:26:05.899 [INFO] WindowManager initialized
+23:26:05.907 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:26:05.907 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:26:05.908 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:26:05.908 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:26:05.908 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:26:05.908 [INFO] AppController initialized with 5 cleanup tasks
+23:26:05.918 [INFO] UIManager initialized
+23:26:05.950 [INFO] UI controls created
+23:26:05.950 [INFO] Worker thread started
+23:26:06.003 [INFO] Application started successfully
+23:26:16.840 [INFO] HandlePrinterUpdate: status=1
+23:26:19.847 [INFO] HandlePrinterUpdate: status=0
+23:26:22.430 [INFO] HandlePrinterUpdate: status=1
+23:26:24.465 [INFO] HandlePrinterUpdate: status=2
+23:26:24.465 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:26:24.469 [INFO] HandlePrinterUpdate: status=2
+23:26:33.468 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:26:33.563 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:26:33.565 [INFO] HandlePrinterUpdate: status=0
+23:26:36.934 [INFO] HandlePrinterUpdate: status=1
+23:26:36.941 [INFO] HandlePrinterUpdate: status=2
+23:26:36.941 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:26:36.944 [INFO] HandlePrinterUpdate: status=2
+23:26:49.803 [INFO] HandlePrinterUpdate: status=1
+23:26:52.805 [INFO] HandlePrinterUpdate: status=0
+23:26:55.381 [INFO] HandlePrinterUpdate: status=1
+23:26:58.397 [INFO] HandlePrinterUpdate: status=0
+23:27:00.976 [INFO] HandlePrinterUpdate: status=1
+23:27:03.986 [INFO] HandlePrinterUpdate: status=0
+23:27:06.561 [INFO] HandlePrinterUpdate: status=1
+23:27:09.576 [INFO] HandlePrinterUpdate: status=0
+23:27:12.149 [INFO] HandlePrinterUpdate: status=1
+23:27:15.165 [INFO] HandlePrinterUpdate: status=5
+23:27:15.165 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:27:15.168 [INFO] HandlePrinterUpdate: status=5
+23:31:03.887 [INFO] Logger initialized
+23:31:03.888 [INFO] Linx Controller starting...
+23:31:03.888 [INFO] WindowManager initialized
+23:31:03.894 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:31:03.895 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:31:03.895 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:31:03.895 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:31:03.895 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:31:03.896 [INFO] AppController initialized with 5 cleanup tasks
+23:31:03.905 [INFO] UIManager initialized
+23:31:04.018 [INFO] UI controls created
+23:31:04.019 [INFO] Worker thread started
+23:31:04.075 [INFO] Application started successfully
+23:31:21.789 [INFO] HandlePrinterUpdate: status=1
+23:31:24.798 [INFO] HandlePrinterUpdate: status=0
+23:31:27.371 [INFO] HandlePrinterUpdate: status=0
+23:31:29.952 [INFO] HandlePrinterUpdate: status=0
+23:31:32.524 [INFO] HandlePrinterUpdate: status=0
+23:31:35.100 [INFO] HandlePrinterUpdate: status=0
+23:31:37.670 [INFO] HandlePrinterUpdate: status=1
+23:31:37.675 [INFO] HandlePrinterUpdate: status=2
+23:31:37.676 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:31:37.679 [INFO] HandlePrinterUpdate: status=2
+23:31:42.556 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:31:42.750 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:31:42.753 [INFO] HandlePrinterUpdate: status=0
+23:31:45.547 [INFO] HandlePrinterUpdate: status=1
+23:31:45.554 [INFO] HandlePrinterUpdate: status=2
+23:31:45.555 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:31:45.558 [INFO] HandlePrinterUpdate: status=2
+23:31:50.405 [INFO] HandlePrinterUpdate: status=3
+23:31:52.971 [INFO] HandlePrinterUpdate: status=3
+23:31:55.538 [INFO] HandlePrinterUpdate: status=3
+23:31:58.118 [INFO] HandlePrinterUpdate: status=3
+23:32:00.696 [INFO] HandlePrinterUpdate: status=1
+23:32:03.704 [INFO] HandlePrinterUpdate: status=5
+23:32:03.704 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:32:03.707 [INFO] HandlePrinterUpdate: status=5
+23:37:57.442 [INFO] Logger initialized
+23:37:57.449 [INFO] Linx Controller starting...
+23:37:57.455 [INFO] WindowManager initialized
+23:37:57.570 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:37:57.601 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:37:57.603 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:37:57.604 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:37:57.604 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:37:57.606 [INFO] AppController initialized with 5 cleanup tasks
+23:37:57.652 [INFO] UIManager initialized
+23:37:57.697 [INFO] UI controls created
+23:37:57.698 [INFO] Worker thread started
+23:37:57.868 [INFO] Application started successfully
+23:38:36.762 [INFO] HandlePrinterUpdate: status=1
+23:38:39.778 [INFO] HandlePrinterUpdate: status=0
+23:38:42.339 [INFO] HandlePrinterUpdate: status=0
+23:38:44.918 [INFO] HandlePrinterUpdate: status=0
+23:38:47.500 [INFO] HandlePrinterUpdate: status=0
+23:38:50.065 [INFO] HandlePrinterUpdate: status=0
+23:38:52.646 [INFO] HandlePrinterUpdate: status=1
+23:38:55.659 [INFO] HandlePrinterUpdate: status=5
+23:38:55.659 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:38:55.666 [INFO] HandlePrinterUpdate: status=5
+23:39:35.612 [INFO] HandlePrinterUpdate: status=1
+23:39:35.620 [INFO] HandlePrinterUpdate: status=2
+23:39:35.620 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:39:35.625 [INFO] HandlePrinterUpdate: status=2
+23:39:42.503 [INFO] HandlePrinterUpdate: status=1
+23:40:22.456 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:40:22.869 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:40:22.872 [INFO] HandlePrinterUpdate: status=0
+23:40:23.378 [INFO] Main window destruction - starting cleanup
+23:40:23.944 [INFO] WorkerLoop exited normally
+23:40:23.944 [INFO] Worker thread stopped with timeout
+23:40:23.959 [INFO] Application shutting down
+23:40:50.668 [INFO] Logger initialized
+23:40:50.671 [INFO] Linx Controller starting...
+23:40:50.672 [INFO] WindowManager initialized
+23:40:50.748 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:40:50.778 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:40:50.805 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:40:50.894 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:40:50.904 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:40:50.935 [INFO] AppController initialized with 5 cleanup tasks
+23:40:51.026 [INFO] UIManager initialized
+23:40:51.067 [INFO] UI controls created
+23:40:51.067 [INFO] Worker thread started
+23:40:51.323 [INFO] Application started successfully
+23:41:13.804 [INFO] HandlePrinterUpdate: status=1
+23:41:13.820 [INFO] HandlePrinterUpdate: status=2
+23:41:13.820 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:41:13.825 [INFO] HandlePrinterUpdate: status=2
+23:41:20.661 [INFO] HandlePrinterUpdate: status=1
+23:41:34.598 [INFO] Main window destruction - starting cleanup
+23:41:34.841 [INFO] WorkerLoop exited normally
+23:41:34.842 [INFO] Worker thread stopped with timeout
+23:41:34.862 [INFO] Application shutting down
+23:42:18.029 [INFO] Logger initialized
+23:42:18.029 [INFO] Linx Controller starting...
+23:42:18.030 [INFO] WindowManager initialized
+23:42:18.044 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:42:18.045 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:42:18.045 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:42:18.045 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:42:18.046 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:42:18.046 [INFO] AppController initialized with 5 cleanup tasks
+23:42:18.060 [INFO] UIManager initialized
+23:42:18.113 [INFO] UI controls created
+23:42:18.114 [INFO] Worker thread started
+23:42:18.205 [INFO] Application started successfully
+23:42:25.855 [INFO] HandlePrinterUpdate: status=1
+23:42:28.868 [INFO] HandlePrinterUpdate: status=0
+23:42:31.448 [INFO] HandlePrinterUpdate: status=1
+23:42:34.460 [INFO] HandlePrinterUpdate: status=0
+23:42:37.039 [INFO] HandlePrinterUpdate: status=1
+23:42:40.052 [INFO] HandlePrinterUpdate: status=0
+23:42:42.637 [INFO] HandlePrinterUpdate: status=1
+23:42:42.652 [INFO] HandlePrinterUpdate: status=2
+23:42:42.653 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:42:42.662 [INFO] HandlePrinterUpdate: status=2
+23:42:47.799 [INFO] HandlePrinterUpdate: status=1
+23:44:01.809 [INFO] Logger initialized
+23:44:01.809 [INFO] Linx Controller starting...
+23:44:01.809 [INFO] WindowManager initialized
+23:44:01.817 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:44:01.818 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:44:01.818 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:44:01.818 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:44:01.818 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:44:01.818 [INFO] AppController initialized with 5 cleanup tasks
+23:44:01.829 [INFO] UIManager initialized
+23:44:01.886 [INFO] UI controls created
+23:44:01.887 [INFO] Worker thread started
+23:44:01.939 [INFO] Application started successfully
+23:44:25.986 [INFO] HandlePrinterUpdate: status=1
+23:44:28.990 [INFO] HandlePrinterUpdate: status=0
+23:44:31.568 [INFO] HandlePrinterUpdate: status=1
+23:44:34.572 [INFO] HandlePrinterUpdate: status=0
+23:44:37.149 [INFO] HandlePrinterUpdate: status=1
+23:44:37.667 [INFO] HandlePrinterUpdate: status=2
+23:44:37.672 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:44:37.683 [INFO] HandlePrinterUpdate: status=2
+23:44:45.364 [INFO] HandlePrinterUpdate: status=1
+23:44:48.369 [INFO] HandlePrinterUpdate: status=0
+23:44:50.958 [INFO] HandlePrinterUpdate: status=1
+23:44:53.967 [INFO] HandlePrinterUpdate: status=0
+23:44:56.560 [INFO] HandlePrinterUpdate: status=1
+23:44:59.570 [INFO] HandlePrinterUpdate: status=0
+23:45:02.143 [INFO] HandlePrinterUpdate: status=1
+23:45:05.146 [INFO] HandlePrinterUpdate: status=0
+23:45:07.725 [INFO] HandlePrinterUpdate: status=1
+23:45:10.732 [INFO] HandlePrinterUpdate: status=5
+23:45:10.732 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:45:10.739 [INFO] HandlePrinterUpdate: status=5
+23:51:55.590 [INFO] Logger initialized
+23:51:55.594 [INFO] Linx Controller starting...
+23:51:55.595 [INFO] WindowManager initialized
+23:51:55.608 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:51:55.610 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:51:55.612 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:51:55.613 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:51:55.613 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:51:55.613 [INFO] AppController initialized with 5 cleanup tasks
+23:51:55.627 [INFO] UIManager initialized
+23:51:55.672 [INFO] UI controls created
+23:51:55.678 [INFO] Worker thread started
+23:51:55.874 [INFO] Application started successfully
+23:52:28.420 [INFO] HandlePrinterUpdate: status=1
+23:52:28.436 [INFO] HandlePrinterUpdate: status=2
+23:52:28.436 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:52:28.443 [INFO] HandlePrinterUpdate: status=2
+23:52:40.424 [INFO] Main window destruction - starting cleanup
+23:52:40.915 [INFO] WorkerLoop exited normally
+23:52:40.919 [INFO] Worker thread stopped with timeout
+23:52:40.943 [INFO] Application shutting down
+23:52:46.776 [INFO] Logger initialized
+23:52:46.777 [INFO] Linx Controller starting...
+23:52:46.777 [INFO] WindowManager initialized
+23:52:46.786 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:52:46.786 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:52:46.787 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:52:46.787 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:52:46.787 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:52:46.793 [INFO] AppController initialized with 5 cleanup tasks
+23:52:46.865 [INFO] UIManager initialized
+23:52:46.909 [INFO] UI controls created
+23:52:46.910 [INFO] Worker thread started
+23:52:46.982 [INFO] Application started successfully
+23:52:48.645 [INFO] HandlePrinterUpdate: status=1
+23:52:48.713 [INFO] HandlePrinterUpdate: status=2
+23:52:48.714 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:52:48.724 [INFO] HandlePrinterUpdate: status=2
+23:52:54.409 [INFO] HandlePrinterUpdate: status=1
+23:56:28.985 [INFO] Logger initialized
+23:56:29.003 [INFO] Linx Controller starting...
+23:56:29.087 [INFO] WindowManager initialized
+23:56:29.315 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:56:29.349 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:56:29.384 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:56:29.389 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:56:29.409 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:56:29.411 [INFO] AppController initialized with 5 cleanup tasks
+23:56:29.458 [INFO] UIManager initialized
+23:56:29.689 [INFO] UI controls created
+23:56:29.690 [INFO] Worker thread started
+23:56:30.000 [INFO] Application started successfully
+23:56:51.994 [INFO] HandlePrinterUpdate: status=1
+23:56:52.018 [INFO] HandlePrinterUpdate: status=2
+23:56:52.018 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:56:52.027 [INFO] HandlePrinterUpdate: status=2
+23:56:57.785 [INFO] HandlePrinterUpdate: status=1
+23:57:14.115 [INFO] Main window destruction - starting cleanup
+23:57:14.284 [INFO] WorkerLoop exited normally
+23:57:14.285 [INFO] Worker thread stopped with timeout
+23:57:14.310 [INFO] Application shutting down
+23:58:24.967 [INFO] Logger initialized
+23:58:24.978 [INFO] Linx Controller starting...
+23:58:24.989 [INFO] WindowManager initialized
+23:58:25.251 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:58:25.256 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:58:25.256 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:58:25.260 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:58:25.265 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:58:25.268 [INFO] AppController initialized with 5 cleanup tasks
+23:58:25.504 [INFO] UIManager initialized
+23:58:25.606 [INFO] UI controls created
+23:58:25.614 [INFO] Worker thread started
+23:58:25.926 [INFO] Application started successfully
+23:58:50.127 [INFO] HandlePrinterUpdate: status=1
+23:58:50.147 [INFO] HandlePrinterUpdate: status=2
+23:58:50.147 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:58:50.156 [INFO] HandlePrinterUpdate: status=2
+23:58:56.048 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:58:56.320 [INFO] UIManager::SetToggleState: OFF, toggleSwitch_ exists: YES
+23:58:56.324 [INFO] HandlePrinterUpdate: status=0
+23:58:56.883 [INFO] HandlePrinterUpdate: status=1
+23:58:56.893 [INFO] HandlePrinterUpdate: status=2
+23:58:56.894 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+23:58:56.900 [INFO] HandlePrinterUpdate: status=2
+23:58:59.175 [INFO] HandlePrinterUpdate: status=1
+00:00:08.480 [INFO] Logger initialized
+00:00:08.481 [INFO] Linx Controller starting...
+00:00:08.481 [INFO] WindowManager initialized
+00:00:08.489 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+00:00:08.489 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+00:00:08.489 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+00:00:08.490 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+00:00:08.490 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+00:00:08.490 [INFO] AppController initialized with 5 cleanup tasks
+00:00:08.503 [INFO] UIManager initialized
+00:00:08.546 [INFO] UI controls created
+00:00:08.546 [INFO] Worker thread started
+00:00:08.658 [INFO] Application started successfully
+00:00:38.332 [INFO] HandlePrinterUpdate: status=1
+00:00:38.350 [INFO] HandlePrinterUpdate: status=2
+00:00:38.350 [INFO] UIManager::SetToggleState: ON, toggleSwitch_ exists: YES
+00:00:38.357 [INFO] HandlePrinterUpdate: status=2
+00:00:43.200 [INFO] HandlePrinterUpdate: status=1
+00:00:46.203 [INFO] HandlePrinterUpdate: status=0
+00:00:48.775 [INFO] HandlePrinterUpdate: status=1
+00:00:51.109 [INFO] Main window destruction - starting cleanup
+00:00:52.127 [ERROR] Worker thread stop timeout - emergency detach
+00:00:52.127 [INFO] Worker thread emergency detached
+00:00:52.296 [INFO] WorkerLoop exited normally
+00:01:09.173 [INFO] Logger initialized
+00:01:09.174 [INFO] Linx Controller starting...
+00:01:09.174 [INFO] WindowManager initialized
+00:01:09.184 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+00:01:09.185 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+00:01:09.185 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+00:01:09.185 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+00:01:09.186 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+00:01:09.186 [INFO] AppController initialized with 5 cleanup tasks
+00:01:09.197 [INFO] UIManager initialized
+00:01:09.233 [INFO] UI controls created
+00:01:09.234 [INFO] Worker thread started
+00:01:09.295 [INFO] Application started successfully
+00:01:11.407 [INFO] Main window destruction - starting cleanup
+00:01:11.519 [INFO] WorkerLoop exited normally
+00:01:11.520 [INFO] Worker thread stopped with timeout
+00:01:11.529 [INFO] Application shutting down

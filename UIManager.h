@@ -10,7 +10,7 @@
 #include "ModernButton.h"
 #include "ToggleSwitch.h"
 #include "MessageLogger.h"
-
+#include "CommonTypes.h"
 class UIManager {
 public:
     UIManager();
@@ -60,6 +60,7 @@ private:
     // State
     int currentCount_ = 0;
     bool isToggleOn_ = false;
+    PrinterStateType lastState_ = PrinterStateType::Unknown;
 
     // Helper methods
     HWND CreateStatic(int x, int y, int w, int h, const wchar_t* text);

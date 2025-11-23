@@ -6,8 +6,8 @@
 #include <iomanip>
 #include "AppController.h"
 
-#include <iostream>  // THÊM DÒNG NÀY
-#include <string>    // THÊM DÒNG NÀY
+#include <iostream> 
+#include <string>    
 
 using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
@@ -216,11 +216,23 @@ bool RciClient::SendFrame(const vector<uint8_t>& frame, vector<uint8_t>& reply, 
 bool RciClient::SendRaw(const vector<uint8_t>& buf) {
     int sent = send(sock_, (const char*)buf.data(), (int)buf.size(), 0);
     if (sent == SOCKET_ERROR) {
-        Log(L"❌ Lỗi gửi dữ liệu", 2);
-        return false;
+
+        int err = WSAGetLastError();
+        Log(L"❌ Lỗi gửi dữ liệu (Fatal) - Socket sẽ bị đóng. Err=" + std::to_wstring(err), 2);
+
+        connected_ = false;
+
+        if (sock_ != INVALID_SOCKET) {
+            shutdown(sock_, SD_BOTH);
+            closesocket(sock_);
+            sock_ = INVALID_SOCKET;
+        }
+
+        return false;   //báo lên AppController rằng kết nối đã chết
     }
     return true;
 }
+
 
 bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
 {
@@ -254,11 +266,18 @@ bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
 
         char tmp[1024];
         int n = recv(sock_, tmp, sizeof(tmp), 0);
-        if (n <= 0)
-        {
+        if (n <= 0) {
             connected_ = false;
+
+            if (sock_ != INVALID_SOCKET) {
+                shutdown(sock_, SD_BOTH);
+                closesocket(sock_);
+                sock_ = INVALID_SOCKET;
+            }
+
             return false;
         }
+
 
         acc.insert(acc.end(), tmp, tmp + n);
 
