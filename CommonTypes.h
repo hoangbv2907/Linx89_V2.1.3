@@ -5,8 +5,12 @@
 enum class PrinterStateType {
     Disconnected,
     Connecting,
+    Reconnecting,
+    StartingJet,
+    StopingJet,
     Connected,
     Idle,
+    Ready,
     Printing,
     Error,
     Unknown

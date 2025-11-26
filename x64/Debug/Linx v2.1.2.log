@@ -1,2 +1,11 @@
 ﻿  AppController.cpp
+  main.cpp
+  MessageLogger.cpp
+  ModernButton.cpp
+  RciClient.cpp
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\RciClient.cpp(383,18): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  ToggleSwitch.cpp
+  UIManager.cpp
+  WindowManager.cpp
+  Generating Code...
   Linx v2.1.2.vcxproj -> C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\x64\Debug\Linx v2.1.2.exe

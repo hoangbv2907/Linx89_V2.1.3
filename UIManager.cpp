@@ -117,60 +117,66 @@ void UIManager::UpdatePrinterStatus(const std::wstring& text) {
 }
 
 // Cập nhật trạng thái UI của máy in dựa trên trạng thái hiện tại
-void UIManager::UpdatePrinterUIState(PrinterState state) {
-    
-    if (state.status == lastState_) {
-        return; // Không đổi màu nếu trạng thái không đổi
-    }
+void UIManager::UpdatePrinterUIState(PrinterState state)
+{
+    // Không làm gì nếu không đổi trạng thái
+    if (state.status == lastState_)
+        return;
 
     lastState_ = state.status;
 
     std::wstring stateText = L"TRẠNG THÁI: ";
+    COLORREF bgColor = RGB(240, 240, 240); // default xám
 
-    COLORREF bgColor = RGB(240, 240, 240); // default
-
-    switch (state.status) {
-    case PrinterStateType::Disconnected:
-        stateText += L"NGẮT KẾT NỐI";
-        bgColor = RGB(240, 240, 240); // xám nhạt
-        break;
-
+    switch (state.status)
+    {
     case PrinterStateType::Connecting:
+    case PrinterStateType::Reconnecting:
         stateText += L"ĐANG KẾT NỐI...";
-        bgColor = RGB(255, 255, 180); // vàng nhạt
+        bgColor = RGB(255, 230, 140);      // VÀNG ĐẬM, KHÔNG NHÁY
         break;
 
     case PrinterStateType::Connected:
-        stateText += L"ĐÃ KẾT NỐI";
-        bgColor = RGB(200, 255, 200); // xanh nhạt
-        break;
-
     case PrinterStateType::Idle:
-        stateText += L"SẴN SÀNG";
-        bgColor = RGB(200, 255, 200); // xanh nhạt
-        break;
-
     case PrinterStateType::Printing:
-        stateText += L"ĐANG IN";
-        bgColor = RGB(180, 240, 255); // xanh lơ nhạt
+        stateText += (state.status == PrinterStateType::Printing)
+            ? L"ĐANG IN"
+            : L"ĐÃ KẾT NỐI";
+        bgColor = RGB(190, 255, 190);      // XANH NHẠT
         break;
 
     case PrinterStateType::Error:
-        stateText += L"LỖI";
-        bgColor = RGB(255, 180, 180); // đỏ nhạt
+    case PrinterStateType::Disconnected:
+        stateText += L"LỖI / MẤT KẾT NỐI";
+        bgColor = RGB(255, 180, 180);      // ĐỎ NHẠT
+        break;
+
+    default:
+        stateText += L"KHÔNG XÁC ĐỊNH";
+        bgColor = RGB(220, 220, 220);
         break;
     }
 
-    // Cập nhật chữ trạng thái
+    // Cập nhật text trạng thái
     if (hPrinterState_)
         SetWindowTextW(hPrinterState_, stateText.c_str());
 
-    // === THÊM ĐỔI NỀN TOÀN CỬA SỔ ===
+
+    // =======================
+    // ⭐ TỐI ƯU: KHÔNG ĐỔI BRUSH NẾU MÀU KHÔNG ĐỔI
+    // =======================
+    static COLORREF lastColor = RGB(255, 255, 255);
+    if (bgColor == lastColor)
+        return;
+
+    lastColor = bgColor;
+
+    // Đổi nền cửa sổ
     HBRUSH brush = CreateSolidBrush(bgColor);
     SetClassLongPtr(hParent_, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
-    InvalidateRect(hParent_, NULL, TRUE);  // yêu cầu vẽ lại
-}
 
+    InvalidateRect(hParent_, NULL, TRUE);
+}
 
 // Cập nhật trạng thái các nút dựa trên trạng thái hiện tại của máy in
 void UIManager::UpdateButtonStates(PrinterState state) {
@@ -201,6 +207,10 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state) {
     case PrinterStateType::Disconnected:
         uploadEnabled = true;
         setEnabled = true;
+        break;
+    case PrinterStateType::Reconnecting:
+        uploadEnabled = true; 
+        setEnabled = true;   
         break;
     case PrinterStateType::Connected:
     case PrinterStateType::Idle:

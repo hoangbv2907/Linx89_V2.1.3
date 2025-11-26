@@ -148,7 +148,6 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
 }
 
-
 //Vị trí gọi: WM_CREATE. tạo control và khởi động thread AppController.
 void WindowManager::HandleCreate() {
 	if (uiManager_) {   //kiểm tra UIManager đã khởi tạo chưa
@@ -209,6 +208,7 @@ void WindowManager::HandlePrinterUpdate(PrinterStateMessage* msg) {
     if (uiManager_ && msg) {
 		uiManager_->UpdatePrinterStatus(msg->statusText);   // Cập nhật text trạng thái máy in
 		uiManager_->UpdatePrinterUIState(msg->state);       // Cập nhật trạng thái UI dựa trên trạng thái máy in
+        uiManager_->UpdateButtonStates(msg->state);
         Logger::GetInstance().Write(L"HandlePrinterUpdate: status=" + std::to_wstring((int)msg->state.status));
 
     }
@@ -277,9 +277,6 @@ void WindowManager::OnToggleClicked() {
         // (Không cần hàm riêng, gọi trực tiếp)
         appController_->DisableAutoReconnect();
 
-        uiManager_->AddMessage(L"🔄 Đang kết nối đến " + ip + L"...");
-        uiManager_->AddMessage(L"[DEBUG] Push connect request");
-
         // Gửi yêu cầu connect
         appController_->Connect(ip);
     }
@@ -290,7 +287,6 @@ void WindowManager::OnToggleClicked() {
         appController_->Disconnect();
     }
 }
-
 
 //vị trí gọi: khi nút upload được click.
 void WindowManager::OnUploadClicked() {

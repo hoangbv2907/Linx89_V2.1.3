@@ -147,7 +147,6 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
         connected_ = true;
     }
 
-    Log(L"✅ Kết nối thành công", 1);
     return true;
 }
 
@@ -173,7 +172,6 @@ bool RciClient::Disconnect() {
     if (localSock != INVALID_SOCKET) {
         ::shutdown(localSock, SD_BOTH);
         ::closesocket(localSock);
-        Log(L"🔌 [Disconnect] Socket closed", 1);
     }
 
     return true;
@@ -232,7 +230,6 @@ bool RciClient::SendRaw(const vector<uint8_t>& buf) {
     }
     return true;
 }
-
 
 bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
 {
