@@ -37,6 +37,8 @@ public:
 	//Cập nhật lại giao diện button
     void Redraw();
 
+    void SetCaption(const std::wstring& text);
+
 	//Lấy handle của button
     HWND GetHandle() const { return hButton; }
 

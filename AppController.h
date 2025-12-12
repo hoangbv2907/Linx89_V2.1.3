@@ -66,6 +66,7 @@ private:
 	std::thread workerThread_;            // Thread xử lý nền
 	std::atomic<bool> running_{ false };  // Biến điều khiển vòng lặp worker thread
 	RequestQueue requestQueue_;           // Queue chứa các request từ UI
+	std::chrono::steady_clock::time_point lastCommandTime_;
 
 	//== Reconnect management ==
 	std::atomic<bool> autoReconnect_{ true };   // Tự động reconnect khi mất kết nối

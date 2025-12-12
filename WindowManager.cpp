@@ -1,5 +1,6 @@
 ﻿#include "WindowManager.h"
 #include "Logger.h"
+#include "UIManager.h"
 #include <commctrl.h>
 
 // Constructor
@@ -33,7 +34,6 @@ bool WindowManager::Initialize(HINSTANCE hInstance) {
 
     // tạo UIManager để quản lý toàn bộ control.
     uiManager_ = std::make_unique<UIManager>();
-
     Logger::GetInstance().Write(L"WindowManager initialized");
     return true;
 }
@@ -126,9 +126,11 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
 
     case WM_APP_CONNECTION_UPDATE: {    //nhận thông tin connected/disconnected
-        ConnectionMessage* connMsg = reinterpret_cast<ConnectionMessage*>(wParam);
-        HandleConnectionUpdate(connMsg);
-        delete connMsg;
+        ConnectionMessage* msg = reinterpret_cast<ConnectionMessage*>(wParam);
+
+        HandleConnectionUpdate(msg);   // dùng đúng hàm WindowManager đã viết
+
+        delete msg;
         return 0;
     }
 
@@ -221,7 +223,7 @@ void WindowManager::HandleConnectionUpdate(ConnectionMessage* msg) {
         
         // Thêm message kết nối/ngắt kết nối vào log UI
         if (msg->connected) { 
-            uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress);
+           // uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress);
         }
         else {
             uiManager_->AddMessage(L"🔌 Đã ngắt kết nối");
@@ -270,11 +272,8 @@ void WindowManager::OnToggleClicked() {
             return;
         }
 
-        // 🔥 FIX 1 — LƯU IP NGAY TẠI UI (trước WorkerLoop tick)
         appController_->SetLastIp(ip);
 
-        // 🔥 FIX 2 — TẮT AUTO RECONNECT TRƯỚC KHI CONNECT
-        // (Không cần hàm riêng, gọi trực tiếp)
         appController_->DisableAutoReconnect();
 
         // Gửi yêu cầu connect
@@ -306,32 +305,65 @@ void WindowManager::OnUploadClicked() {
 void WindowManager::OnStartClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
 
+    PrinterState cur = appController_->GetCurrentState();
+
+    if (cur.jetOn) {
+        uiManager_->AddMessage(L"⚠️ Jet đã ON — không gửi lệnh khởi động.");
+        return;
+    }
+    if (cur.status == PrinterStateType::StartingJet ) {
+        uiManager_->AddMessage(L"⚠️ Đang chờ Jet khởi động — vui lòng đợi.");
+        return;
+    }
 	appController_->StartJet(); //gọi StartJet trong AppController
     uiManager_->AddMessage(L"🚀 Khởi động jet...");
 }
 
 //vị trí gọi: khi nút print được click.
+// WindowManager.cpp
 void WindowManager::OnPrintClicked() {
-    if (!appController_ || !uiManager_) return;
+    if (!appController_ || !uiManager_) return; // kiểm tra AppController tồn tại
 
-	std::wstring content = uiManager_->GetInputText();      // Lấy nội dung in từ UI
-	int count = uiManager_->GetCountValue();                // Lấy số lượng in từ UI
+    // Lấy trạng thái hiện tại từ AppController (hoặc PrinterModel)
+    PrinterState cur = appController_->GetCurrentState();
 
-    if (!content.empty()) {
-		appController_->StartPrinting(content, count);  //gọi StartPrinting trong AppController
-        uiManager_->AddMessage(L"🖨️ Bắt đầu in...");
+    if (cur.status == PrinterStateType::Printing || cur.printing) {
+        // Nếu đang in -> gửi lệnh StopPrint (tạm dừng)
+        appController_->StopPrinting();
+        uiManager_->AddMessage(L"⏸️ Yêu cầu tạm dừng in được gửi...");
     }
     else {
-        uiManager_->AddMessage(L"⚠️ Chưa có nội dung để in");
+        // Nếu không đang in -> bắt đầu in
+        std::wstring content = uiManager_->GetInputText();
+        int count = uiManager_->GetCountValue();
+
+        if (!content.empty() && count > 0) {
+            appController_->StartPrinting(content, count);
+            uiManager_->AddMessage(L"🖨️ Đã gửi lệnh bắt đầu in...");
+        }
+        else {
+            uiManager_->AddMessage(L"⚠️ Chưa có nội dung hoặc số lượng không hợp lệ");
+        }
     }
 }
+
 
 //vị trí gọi: khi nút stop được click.
 void WindowManager::OnStopClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
 
-	appController_->StopPrinting(); //gọi StopPrinting trong AppController
-    uiManager_->AddMessage(L"⏹️ Dừng in...");
+    PrinterState cur = appController_->GetCurrentState();
+
+    if (!cur.jetOn) {
+        uiManager_->AddMessage(L"⚠️ Jet đã off — không gửi lệnh dừng");
+        return;
+    }
+    if (cur.status == PrinterStateType::StopingJet) {
+        uiManager_->AddMessage(L"⚠️ Đang chờ dừng Jet  — vui lòng đợi.");
+        return;
+    }
+	appController_->StopJet(); //gọi StopPrinting trong AppController
+    uiManager_->AddMessage(L"⏹️ Dừng jet...");
 }
 
 //vị trí gọi: khi nút clear được click.

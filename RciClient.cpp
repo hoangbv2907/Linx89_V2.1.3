@@ -429,7 +429,14 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
     if (esc_etx_pos == std::string::npos) {
         // cannot find end marker, fallback to previous simple check
         uint8_t recvCmd = reply.size() > 4 ? reply[4] : 0x00;
-        return recvCmd == cmdid;
+        //return recvCmd == cmdid;
+        if (cmdid == 0x11 && recvCmd == 0x11) {
+            lastStartPrintAck = true;    // StartPrint đã hợp lệ
+        }
+        if (cmdid == 0x12 && recvCmd == 0x12) {
+            lastStartPrintAck = false;   // StopPrint thì tắt cờ in
+        }
+
     }
 
     // body is bytes between reply[2] ... before esc_etx_pos
@@ -481,7 +488,14 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
         return false;
     }
 
-    return recvCmd == cmdid;
+   // return recvCmd == cmdid;
+    if (cmdid == 0x11 && recvCmd == 0x11) {
+        lastStartPrintAck = true;    // StartPrint đã hợp lệ
+    }
+    if (cmdid == 0x12 && recvCmd == 0x12) {
+        lastStartPrintAck = false;   // StopPrint thì tắt cờ in
+    }
+
 }
 
 
@@ -491,7 +505,7 @@ PrinterStatus RciClient::RequestStatusEx() {
 
     if (!IsConnected()) return s;
 
-    if (!SendFrame(BuildFrame(0x14), reply, 100))
+    if (!SendFrame(BuildFrame(0x14), reply, 500))
         return s;
 
     const uint8_t ESC = 0x1B, ACK = 0x06;
@@ -499,10 +513,10 @@ PrinterStatus RciClient::RequestStatusEx() {
         s.jetState = reply[5];
         s.printState = reply[6];
         s.errorMask = (reply[7] << 24) | (reply[8] << 16) | (reply[9] << 8) | reply[10];
-
-        s.jetOn = (s.jetState != 0x03); // 03 = tắt jet
-        s.printing = (s.printState == 0x04); // 04 = đang in
-        s.paused = (s.printState == 0x02); // 02 = tạm dừng
+        
+        s.jetOn = (s.jetState == 0x00);
+        s.printing = (s.printState == 0x04 ); // 04 = đang in
+        s.idle = (s.printState == 0x02);
     }
     return s;
 }

@@ -205,3 +205,10 @@ void ModernButton::DrawRoundedRect(HDC hdc, const RECT& rc, COLORREF fill, int r
     SelectObject(hdc, oldPen);
     DeleteObject(brush);
 }
+
+void ModernButton::SetCaption(const std::wstring& text)
+{
+    caption = text;
+    SetWindowTextW(hButton, text.c_str());
+}
+

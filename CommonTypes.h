@@ -3,17 +3,19 @@
 #include <vector>
 
 enum class PrinterStateType {
-    Disconnected,
-    Connecting,
-    Reconnecting,
-    StartingJet,
-    StopingJet,
-    Connected,
-    Idle,
-    Ready,
-    Printing,
-    Error,
-    Unknown
+	Disconnected,   //chua kết nối  
+    Connected,      //da ket noi
+	Connecting,     //dang ket noi
+	Reconnecting,   //dang ket noi lai
+	StartingJet,    //dang bat jet
+	StopingJet,     //dang tat jet
+
+	Idle,           //jet off, máy vừa bật lên
+    Ready,           // paused jet on, print off
+	Printing,       //jet on, print on
+	Error,          // có lỗi
+	Unknown            // trạng thái không xác định
+    
 };
 
 //

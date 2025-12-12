@@ -91,6 +91,7 @@ void UIManager::CreateControls() {
     initialState.status = PrinterStateType::Disconnected;
     initialState.statusText = L"Chưa kết nối";
     UpdateButtonStates(initialState);
+    UpdatePrinterUIState(initialState);
 
     Logger::GetInstance().Write(L"UI controls created");
 }
@@ -130,30 +131,34 @@ void UIManager::UpdatePrinterUIState(PrinterState state)
 
     switch (state.status)
     {
-    case PrinterStateType::Connecting:
+    case PrinterStateType::Disconnected:
+        stateText += L"CHƯA KẾT NỐI";
+        bgColor = RGB(240, 240, 240); // xám
+        break;
+    case PrinterStateType::Idle:
+    case PrinterStateType::Connected:
+        stateText += L"ĐÃ KẾT NỐI";
+        bgColor = RGB(102, 205, 170); // xanh lá
+        break;
     case PrinterStateType::Reconnecting:
+    case PrinterStateType::Connecting:
         stateText += L"ĐANG KẾT NỐI...";
-        bgColor = RGB(255, 230, 140);      // VÀNG ĐẬM, KHÔNG NHÁY
+        bgColor = RGB(250, 230, 150); // vàng nhạt
         break;
 
-    case PrinterStateType::Connected:
-    case PrinterStateType::Idle:
+    case PrinterStateType::Ready: // jetOn
+        stateText += L"JET ON";
+        bgColor = RGB(32, 178, 170); // xanh dương nhạt
+        break;
+
     case PrinterStateType::Printing:
-        stateText += (state.status == PrinterStateType::Printing)
-            ? L"ĐANG IN"
-            : L"ĐÃ KẾT NỐI";
-        bgColor = RGB(190, 255, 190);      // XANH NHẠT
+        stateText += L"ĐANG IN...";
+        bgColor = RGB(150, 210, 255); // xanh dương nhạt
         break;
 
     case PrinterStateType::Error:
-    case PrinterStateType::Disconnected:
-        stateText += L"LỖI / MẤT KẾT NỐI";
-        bgColor = RGB(255, 180, 180);      // ĐỎ NHẠT
-        break;
-
-    default:
-        stateText += L"KHÔNG XÁC ĐỊNH";
-        bgColor = RGB(220, 220, 220);
+        stateText += L"LỖI MÁY IN";
+        bgColor = RGB(255, 140, 140); // đỏ
         break;
     }
 
@@ -182,64 +187,79 @@ void UIManager::UpdatePrinterUIState(PrinterState state)
 void UIManager::UpdateButtonStates(PrinterState state) {
 	UpdateButtonStateForPrinterState(state);    // Cập nhật trạng thái nút dựa trên trạng thái máy in
     
+    /*
     // Đồng bộ toggle với state thực tế
-    bool shouldBeOn = (state.status == PrinterStateType::Connected || state.status == PrinterStateType::Connecting);
+    bool shouldBeOn = state.jetOn;
     // Toggle nên bật nếu máy in đã kết nối
 	if (isToggleOn_ != shouldBeOn) {    // Nếu trạng thái toggle không khớp với trạng thái thực tế
         Logger::GetInstance().Write(L"Toggle state changing: " +
             std::to_wstring(isToggleOn_) + L" -> " + std::to_wstring(shouldBeOn));
         SetToggleState(shouldBeOn);     // Cập nhật trạng thái toggle
     }
+    */
 }
 
 // Cập nhật trạng thái của các nút dựa trên trạng thái hiện tại của máy in
-void UIManager::UpdateButtonStateForPrinterState(PrinterState state) {
-	// Khởi tạo tất cả trạng thái nút là false
-    bool uploadEnabled = false;
-    bool startEnabled = false;
-    bool printEnabled = false;
-    bool stopEnabled = false;
-    bool clearEnabled = true;
-    bool setEnabled = false;
+void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
+{
+    bool upload = false;
+    bool startJet = false;
+    bool stopJet = false;
+    bool print = false;  // start print
+    bool stopPrint = false;
+    bool setCount = false;
 
-	// Xác định trạng thái nút dựa trên trạng thái máy in
-    switch (state.status) {
+    switch (state.status)
+    {
     case PrinterStateType::Disconnected:
-        uploadEnabled = true;
-        setEnabled = true;
-        break;
-    case PrinterStateType::Reconnecting:
-        uploadEnabled = true; 
-        setEnabled = true;   
-        break;
-    case PrinterStateType::Connected:
-    case PrinterStateType::Idle:
-        uploadEnabled = true;
-        startEnabled = true;
-        printEnabled = true;
-        stopEnabled = true;
-        setEnabled = true;
-        break;
-    case PrinterStateType::Printing:
-        uploadEnabled = true;
-        printEnabled = true;
-        stopEnabled = true;
-        setEnabled = true;
-        break;
+    case PrinterStateType::Connecting:
     case PrinterStateType::Error:
-        uploadEnabled = true;
-        clearEnabled = true;
+        upload = false;
+        startJet = false;
+        stopJet = false;
+        print = false;  
+        stopPrint = false;
+        setCount = false;
+        break;
+    
+    case PrinterStateType::Idle:   // jetOff vừa bật máy lên
+        upload = true;
+        startJet = true;
+        stopJet = false;
+        print = false;    //start print 
+        stopPrint = false;
+        setCount = true;
+        btnPrint_.SetCaption(L"IN");
+        btnPrint_.SetBaseColor(RGB(200, 200, 200));
+        break;
+    case PrinterStateType::Ready:  // jetOn  printoff
+        upload = true;
+        stopJet = true;
+        startJet = true;
+        print = true;
+        stopPrint = true;
+        setCount = true;
+        btnPrint_.SetCaption(L"BẮT ĐẦU IN");
+        btnPrint_.SetBaseColor(RGB(0, 180, 0));
+        break;
+	case PrinterStateType::Printing: // jetOn printon
+        upload = false;
+        startJet = true;
+        stopJet = true;
+        print = true;    //start print 
+        stopPrint = true;
+        setCount = false;
+        btnPrint_.SetCaption(L"TẠM DỪNG IN");
+        btnPrint_.SetBaseColor(RGB(255, 160, 0));
         break;
     default:
         break;
     }
-	// Cập nhật trạng thái nút trong giao diện người dùng
-    if (hBtnUpload_) EnableWindow(hBtnUpload_, uploadEnabled); 
-    if (btnStart_.GetHandle()) EnableWindow(btnStart_.GetHandle(), startEnabled);   
-    if (btnPrint_.GetHandle()) EnableWindow(btnPrint_.GetHandle(), printEnabled);
-    if (btnStop_.GetHandle()) EnableWindow(btnStop_.GetHandle(), stopEnabled);
-    if (btnClear_.GetHandle()) EnableWindow(btnClear_.GetHandle(), clearEnabled);
-    if (btnSet_.GetHandle()) EnableWindow(btnSet_.GetHandle(), setEnabled);
+    EnableWindow(hBtnUpload_, upload);
+    EnableWindow(btnStart_.GetHandle(), startJet);
+    EnableWindow(btnPrint_.GetHandle(), print || stopPrint);
+    EnableWindow(btnStop_.GetHandle(), stopJet);
+    EnableWindow(btnSet_.GetHandle(), setCount);
 }
 
 // Cài đặt trạng thái của toggle switch và đồng bộ giao diện

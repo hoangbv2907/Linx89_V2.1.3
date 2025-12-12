@@ -14,7 +14,9 @@ struct PrinterStatus {
     uint32_t errorMask = 0;
     bool jetOn = false;
     bool printing = false;
-    bool paused = false;
+    bool idle = false;
+
+    uint32_t printCount = 0;
 };
 
 class RciClient {
@@ -68,7 +70,7 @@ private:
     std::wstring host_;
     unsigned short port_;
     std::mutex mtx_;
-
+    bool lastStartPrintAck = false;
     MessageCallback callback_;
 
     void Log(const std::wstring& msg, int type = 0);
