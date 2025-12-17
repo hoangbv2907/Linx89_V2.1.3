@@ -67,11 +67,14 @@ private:
 	std::atomic<bool> running_{ false };  // Biến điều khiển vòng lặp worker thread
 	RequestQueue requestQueue_;           // Queue chứa các request từ UI
 	std::chrono::steady_clock::time_point lastCommandTime_;
+	std::atomic<bool> jetTransitioning_{ false }; // Biến để theo dõi trạng thái chuyển đổi jet
 
 	//== Reconnect management ==
 	std::atomic<bool> autoReconnect_{ true };   // Tự động reconnect khi mất kết nối
 	std::atomic<int> reconnectAttempts_{ 0 };   // Số lần đã thử reconnect
 	const int MAX_RECONNECT_ATTEMPTS = 5;       // Giới hạn số lần reconnect
+	bool lastJetOn_ = false;
+	bool hasInitialStatus_ = false;		// trạng thái jet lần cuối
 
 	//== Worker thread methods ==
 	void WorkerLoop();                         // Vòng lặp chính của worker thread

@@ -41,7 +41,7 @@ struct PrinterState {
 
     bool jetOn = false;
     bool printing = false;
-
+    bool jetTransitioning = false;
     int printedCount = 0;
     int targetCount = 0;
 

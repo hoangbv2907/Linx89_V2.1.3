@@ -48,7 +48,7 @@ namespace {
 // ================== Constructor / Destructor ==================
 AppController::AppController(HWND mainWindow)
     : mainWindow_(mainWindow),
-    resourceTracker("AppController") {
+    resourceTracker("AppController"), lastJetOn_(false) {
 
     //== Khởi tạo các components chính ==
     printerModel_ = std::make_unique<PrinterModel>();   // Model lưu trạng thái máy in
@@ -532,6 +532,10 @@ void AppController::HandleDisconnectRequest() {
 
     DisableAutoReconnect();
 
+    jetTransitioning_ = false;   // ⬅️ RESET
+    hasInitialStatus_ = false;   // ⬅️ RESET
+    lastJetOn_ = false;          // ⬅️ RESET
+
     if (rciClient_) {
         rciClient_->Disconnect();
     }
@@ -574,23 +578,23 @@ void AppController::DoPeriodicPoll() {
     if (ShouldAutoStartJet()) {
         HandleStartJetRequest();
     }
-
     UpdatePrinterState();
 }
 
-// Gửi lệnh STATUS 0x14 đến Linx và cập nhật model
+
 void AppController::HandleStatusRequest() {
-    if (!rciClient_ || !rciClient_->IsConnected())
+    if (!rciClient_ || !rciClient_->IsConnected()) {
         return;
+    }
 
     PrinterStatus raw = rciClient_->RequestStatusEx();
+
     if (!rciClient_->IsConnected()) {
-        return; // socket chết, dừng poll
+        return;
     }
 
     // Text mô tả tình trạng
-    std::wstring text =
-        L"Jet=" + std::to_wstring(raw.jetState) +
+    std::wstring text = L"Jet=" + std::to_wstring(raw.jetState) +
         L" Print=" + std::to_wstring(raw.printState) +
         L" ErrMask=0x" + std::to_wstring(raw.errorMask);
 
@@ -598,11 +602,65 @@ void AppController::HandleStatusRequest() {
 
     PrinterState st = printerModel_->GetState(); // lấy state cũ
 
-    // ----- Mapping FLAGS -----
+    // ===== Mapping FLAGS =====
     st.jetOn = raw.jetOn;
     st.printing = raw.printing;
+    st.jetTransitioning = jetTransitioning_;
+    st.statusText = text;
 
-    // ----- Mapping STATUS MACHINE -----
+    bool jetOnNow = raw.jetOn;
+
+    // =====================================================
+    // 🔒 ĐANG TRONG TRANSITION
+    // =====================================================
+    if (jetTransitioning_) {
+        // 🔍 THEO DÕI sự thay đổi của jet
+        if (!hasInitialStatus_) {
+            // Lần đầu tiên sau khi bắt đầu transition
+            lastJetOn_ = jetOnNow;
+            hasInitialStatus_ = true;
+        }
+        else if (jetOnNow != lastJetOn_) {
+            // Jet đã đổi trạng thái → KẾT THÚC TRANSITION
+            jetTransitioning_ = false;
+            st.jetTransitioning = false;
+
+            // Chuyển sang trạng thái ổn định
+            if (raw.errorMask != 0) {
+                st.status = PrinterStateType::Error;
+                st.errorMessage = L"ErrorMask: 0x" + std::to_wstring(raw.errorMask);
+            }
+            else if (raw.printing) {
+                st.status = PrinterStateType::Printing;
+              }
+            else if (raw.jetOn) {
+                st.status = PrinterStateType::Ready;
+            }
+            else {
+                st.status = PrinterStateType::Idle;
+            }
+
+            lastJetOn_ = jetOnNow;
+            printerModel_->SetState(st);
+            SendStateUpdate();
+
+            return;
+        }
+        else {
+            Logger::GetInstance().Write(L"🔄 HandleStatusRequest: Jet chưa thay đổi, "
+                L"vẫn đang chờ...", 1);
+        }
+
+        // Vẫn đang trong transition, chỉ cập nhật thông tin phụ
+        printerModel_->SetState(st);
+        SendStateUpdate();
+
+        return;
+    }
+
+    // =====================================================
+    // 🚦 KHÔNG CÓ TRANSITION - State machine bình thường
+    // ====================================================
     if (raw.errorMask != 0) {
         st.status = PrinterStateType::Error;
         st.errorMessage = L"ErrorMask: 0x" + std::to_wstring(raw.errorMask);
@@ -617,7 +675,9 @@ void AppController::HandleStatusRequest() {
         st.status = PrinterStateType::Idle;
     }
 
-    st.statusText = text;
+    // Cập nhật tracking
+    lastJetOn_ = jetOnNow;
+    hasInitialStatus_ = true;
 
     printerModel_->SetState(st);
     SendStateUpdate();
@@ -645,8 +705,70 @@ void AppController::HandlePrintCountRequest()
     }
 }
 
-
 // Bắt đầu in: dùng LoadMessage + StartPrint của RCI thật
+
+bool AppController::HandleStartJetRequest() {
+    if (!rciClient_ || !rciClient_->IsConnected()) {
+        return false;
+    }
+
+    if (jetTransitioning_) {
+        return false;
+    }
+
+    jetTransitioning_ = true;
+    hasInitialStatus_ = false; // QUAN TRỌNG: reset để theo dõi
+
+
+    PrinterState st = printerModel_->GetState();
+    st.status = PrinterStateType::StartingJet;
+    st.statusText = L"Đang khởi động Jet...";
+    st.jetTransitioning = true;
+
+    printerModel_->SetState(st);
+    SendStateUpdate();
+
+    bool result = rciClient_->StartJet();
+
+    if (!result) {
+        jetTransitioning_ = false;
+        return false;
+    }
+
+    lastCommandTime_ = std::chrono::steady_clock::now();
+
+    return true;
+}
+
+void AppController::HandleStopJetRequest() {
+    if (!rciClient_ || !rciClient_->IsConnected()) {
+        return;
+    }
+
+    if (jetTransitioning_) {
+        return;
+    }
+
+    jetTransitioning_ = true; // 🔒 LOCK
+    hasInitialStatus_ = false; // QUAN TRỌNG: reset;
+
+    PrinterState st = printerModel_->GetState();
+    st.status = PrinterStateType::StopingJet;
+    st.statusText = L"Đang dừng Jet...";
+    st.jetTransitioning = true;
+
+    printerModel_->SetState(st);
+    SendStateUpdate();
+
+    if (!rciClient_->StopJet()) {
+        jetTransitioning_ = false;
+        return;
+    }
+
+    lastCommandTime_ = std::chrono::steady_clock::now();
+    SendStateUpdate();
+}
+
 void AppController::HandleStartPrintRequest(const Request& req) {
 
     if (!rciClient_ || !rciClient_->IsConnected()) {
@@ -655,8 +777,8 @@ void AppController::HandleStartPrintRequest(const Request& req) {
     }
 
     // auto bật jet (chỉ gửi lệnh, không đổi state ở đây)
-   if (!HandleStartJetRequest())
-       return;
+    if (!HandleStartJetRequest())
+        return;
 
     // chuẩn hóa tên message 8 ký tự (giữ nguyên logic cũ)
     std::wstring wname = req.data;
@@ -694,37 +816,6 @@ void AppController::HandleStopPrintRequest() {
 
     // KHÔNG sửa PrinterState ở đây – đợi STATUS 0x14
     SendLogMessage(L"Đã gửi lệnh dừng in, chờ máy in phản hồi...", 0);
-}
-
-
-bool AppController::HandleStartJetRequest() {
-    if (!rciClient_ || !rciClient_->IsConnected())
-        return false;
-
-    if (!rciClient_->StartJet()) {
-        SendLogMessage(L"Lỗi gửi lệnh StartJet", 2);
-        return false;
-    }
-    lastCommandTime_ = std::chrono::steady_clock::now();
-
-    // KHÔNG set state ở đây, để STATUS 0x14 quyết định jetOn/Ready
-    SendLogMessage(L"Đã gửi lệnh khởi động Jet, chờ máy in trả trạng thái...", 0);
-    return true;
-}
-
-
-void AppController::HandleStopJetRequest() {
-    if (rciClient_ && rciClient_->IsConnected()) {
-        if (!rciClient_->StopJet()) {
-            SendLogMessage(L"Lỗi gửi lệnh StopJet", 2);
-            return;
-        }
-        lastCommandTime_ = std::chrono::steady_clock::now();
-    }
-
-    // KHÔNG tự set jetOn = false / Idle.
-    // Khi Jet dừng thật, STATUS 0x14 sẽ trả về jetOn = false và HandleStatusRequest() sẽ map về Idle.
-    SendLogMessage(L"Đã gửi lệnh dừng Jet, chờ máy in trả trạng thái...", 0);
 }
 
 void AppController::HandleConnectRequest(const Request& req)
@@ -829,8 +920,11 @@ bool AppController::ShouldGetPrintCount() const {
 
 bool AppController::ShouldAutoStartJet() const {
     auto state = printerModel_->GetState();
-    return (!state.jetOn) && printerModel_->HasPendingPrintJob();
+    return (!state.jetOn)
+        && printerModel_->HasPendingPrintJob()
+        && !jetTransitioning_;   // ⬅️ THÊM DÒNG NÀY
 }
+
 
 void AppController::UpdatePrinterState()
 {

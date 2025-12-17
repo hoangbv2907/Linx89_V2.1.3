@@ -356,14 +356,11 @@ bool RciClient::StopPrint() {
 }
 
 bool RciClient::StartJet() {
-    vector<uint8_t> reply;
-    auto frame = BuildFrame(0x0F);
-    return SendFrame(frame, reply);
+    return SendCommandNoAck(0x0F);
+
 }
 bool RciClient::StopJet() {
-    vector<uint8_t> reply;
-    auto frame = BuildFrame(0x10);
-    return SendFrame(frame, reply);
+    return SendCommandNoAck(0x10);
 }
 
 bool RciClient::LoadMessage(const string& name, uint16_t printCount) {
@@ -495,7 +492,7 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
     if (cmdid == 0x12 && recvCmd == 0x12) {
         lastStartPrintAck = false;   // StopPrint thì tắt cờ in
     }
-
+    return true;
 }
 
 
@@ -536,7 +533,6 @@ std::wstring RciClient::ReplyToString(const vector<uint8_t>& reply) {
 }
 
 bool RciClient::SendCommandNoAck(uint8_t cmdid, const std::vector<uint8_t>& payload) {
-    std::lock_guard<std::mutex> lock(mtx_);
     std::vector<uint8_t> frame = BuildFrame(cmdid, payload);
     return SendRaw(frame);
 }
