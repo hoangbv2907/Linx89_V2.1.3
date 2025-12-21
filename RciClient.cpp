@@ -16,7 +16,12 @@ using namespace std;
 // =========================================================
 RciClient::RciClient() : sock_(INVALID_SOCKET), connected_(false), port_(0) {
     WSADATA wsa;
-    WSAStartup(MAKEWORD(2, 2), &wsa);
+    int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsa);
+    if (wsaResult != 0) {
+        // Handle error, e.g., throw, log, or set a flag
+        std::wcerr << L"WSAStartup failed with error: " << wsaResult << std::endl;
+        // Optionally, you can set connected_ = false or take other action
+    }
 }
 
 RciClient::~RciClient() {
@@ -377,7 +382,14 @@ bool RciClient::LoadMessage(const string& name, uint16_t printCount) {
 
 bool RciClient::DownloadRemoteField(const vector<uint8_t>& data) {
     vector<uint8_t> payload;
-    uint16_t len = data.size();
+    //uint16_t len = data.size();
+    size_t size = data.size();
+    if (size > UINT16_MAX) {
+        Log(L"Payload quá lớn", 2);
+        return false;
+    }
+    uint16_t len = static_cast<uint16_t>(size);
+
     payload.push_back(len & 0xFF);
     payload.push_back((len >> 8) & 0xFF);
     payload.insert(payload.end(), data.begin(), data.end());

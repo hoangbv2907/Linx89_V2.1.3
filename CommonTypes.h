@@ -30,7 +30,8 @@ enum class RequestType {
     RequestStartJet,
     RequestStopJet,
     RequestConnect,
-    RequestDisconnect
+    RequestDisconnect,
+    RequestUploadContent
 };
 
 //
@@ -71,3 +72,29 @@ struct Request {
     int count = 0;
     std::wstring ipAddress; // not used but kept for compatibility
 };
+
+// Convert PrinterState to human-readable text
+inline std::wstring StateToText(const PrinterState& st) {
+    switch (st.status) {
+    case PrinterStateType::StartingJet:
+        return L"🟡 STARTING JET...";
+    case PrinterStateType::StopingJet:
+        return L"🟠 STOPPING JET...";
+    case PrinterStateType::Printing:
+        return L"🔵 PRINTING";
+    case PrinterStateType::Ready:
+        return L"🟢 READY";
+    case PrinterStateType::Idle:
+        return L"⚪ IDLE (Jet OFF)";
+    case PrinterStateType::Error:
+        return L"🔴 ERROR: " + st.errorMessage;
+    case PrinterStateType::Connecting:
+        return L"🔄 CONNECTING...";
+    case PrinterStateType::Reconnecting:
+        return L"🔁 RECONNECTING...";
+    case PrinterStateType::Disconnected:
+        return L"❌ DISCONNECTED";
+    default:
+        return L"❓ UNKNOWN";
+    }
+}

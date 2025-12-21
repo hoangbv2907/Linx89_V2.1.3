@@ -40,6 +40,7 @@ public:
 	void StartPrinting(const std::wstring& content, int count);
 	void StopPrinting();
 	void SetCount(int count);
+	void UploadContent(const std::wstring& content, int count);
 	void StartJet();
 	void StopJet();
 
@@ -55,7 +56,8 @@ public:
 	//================= WORKER THREAD MANAGEMENT =================
 	void StartWorkerThread();               //khởi động worker thread
 	bool StopWorkerThread(int timeoutMs);   //dừng worker thread với timeout
-
+	void SavePrintDataOnExit();
+	void LoadPrintDataOnStart();
 private:
 	ResourceTracker resourceTracker;               // Quản lý cleanup resources
 	HWND mainWindow_;                              // Handle của cửa sổ chính
@@ -87,7 +89,7 @@ private:
 	void HandlePrintCountRequest();                 // Hiện vẫn mô phỏng bằng model
 	void HandleStartPrintRequest(const Request& request);   // bắt đầu in
 	void HandleStopPrintRequest();                  // dừng in
-
+	void HandleUploadContentRequest(const Request& request);
 	void HandleSetCountRequest(const Request& request);     // đặt số lượng in
 	bool HandleStartJetRequest();                           // bật jet
 	void HandleStopJetRequest();                            // tắt jet

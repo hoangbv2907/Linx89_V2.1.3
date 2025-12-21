@@ -15,6 +15,10 @@ public:
         currentState_.targetCount = 0;
     }
 
+    const std::wstring& GetCurrentJobContent() const
+    {
+        return currentJobContent_;
+    }
 	// Đặt trạng thái máy in
     void SetState(PrinterState state) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -43,7 +47,7 @@ public:
 	// Đặt công việc in hiện tại
     void SetCurrentJob(const std::wstring& jobId, int totalCount) {
         std::lock_guard<std::mutex> lock(mutex_);
-        currentJobId_ = jobId;
+        currentJobContent_ = jobId;
         jobTotal_ = totalCount;
         jobCurrent_ = 0;
         currentState_.jobId = jobId;
@@ -150,6 +154,7 @@ private:
     std::wstring currentJobId_;
     int jobTotal_ = 0;
     int jobCurrent_ = 0;
+    std::wstring currentJobContent_;
 
     std::wstring ipAddress_;
     int port_ = 9100;

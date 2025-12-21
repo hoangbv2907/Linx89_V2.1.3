@@ -1,2 +1,3 @@
-﻿  UIManager.cpp
+﻿  WindowManager.cpp
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(131,38): warning C4101: 'e': unreferenced local variable
   Linx v2.1.2.vcxproj -> C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\x64\Debug\Linx v2.1.2.exe

@@ -55,11 +55,19 @@ bool WindowManager::CreateMainWindow(const std::wstring& title, int width, int h
     }
 
 	//tạo cửa sổ chính với CreateWindowEx//Vị trí gọi: main.cpp → sau đó ShowWindow + UpdateWindow.
+    DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+
+    RECT rc{ 0, 0, width, height };
+    AdjustWindowRectEx(&rc, style, FALSE, 0);
+
+    int winW = rc.right - rc.left;
+    int winH = rc.bottom - rc.top;
+
     hwnd_ = CreateWindowEx(
-		0, wc.lpszClassName, title.c_str(),             // tiêu đề cửa sổ
-		WS_OVERLAPPEDWINDOW,                            // kiểu cửa sổ chuẩn                
-		CW_USEDEFAULT, CW_USEDEFAULT, width, height,    // vị trí và kích thước
-		nullptr, nullptr, hInstance_, this              // không có menu, truyền vào lpCreateParams → dùng trong WM_NCCREATE để StaticWndProc biết con trỏ instance
+        0, wc.lpszClassName, title.c_str(),
+        style,
+        CW_USEDEFAULT, CW_USEDEFAULT, winW, winH,
+        nullptr, nullptr, hInstance_, this
     );
 
     if (!hwnd_) {
@@ -109,11 +117,21 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         HandleDrawItem(reinterpret_cast<LPDRAWITEMSTRUCT>(lParam));
         return TRUE;
 
-
     case WM_APP_LOG: {  //nhận log message từ AppController thread, update UI.
         LogMessage* logMsg = reinterpret_cast<LogMessage*>(wParam);
         HandleAppLog(logMsg);
         delete logMsg;
+        return 0;
+    }
+    case WM_CLOSE:
+    {
+        try {
+            appController_->SavePrintDataOnExit();
+        }
+        catch (const std::exception& e) {
+        }
+
+        DestroyWindow(hwnd_);
         return 0;
     }
 
@@ -155,10 +173,12 @@ void WindowManager::HandleCreate() {
 	if (uiManager_) {   //kiểm tra UIManager đã khởi tạo chưa
 		uiManager_->Initialize(hwnd_);  // Khởi tạo UIManager với HWND của cửa sổ chính
 		uiManager_->CreateControls();   // Tạo các control trên cửa sổ
+        appController_->LoadPrintDataOnStart();
     }
 
 	if (appController_) {   //kiểm tra AppController đã khởi tạo chưa
-		appController_->StartWorkerThread(); // Bắt đầu thread làm việc trong AppController
+
+        appController_->StartWorkerThread(); // Bắt đầu thread làm việc trong AppController
     }
 }
 
@@ -292,9 +312,10 @@ void WindowManager::OnUploadClicked() {
 	if (!appController_ || !uiManager_) return;  // kiểm tra AppController và UIManager tồn tại
 
 	std::wstring content = uiManager_->GetInputText();  // lấy nội dung từ UI
-	if (!content.empty()) {     // nếu có nội dung
-		//appController_->UploadContent(content);  // gọi upload nội dung trong AppController
-        uiManager_->AddMessage(L"📤 Đã tải lên nội dung: " + content);
+    int count = uiManager_->GetCountValue();
+    if (!content.empty()) {     // nếu có nội dung
+        appController_->UploadContent(content, count);
+        uiManager_->AddMessage(L"📤 Đã tải lên nội dung");
     }
     else {
         uiManager_->AddMessage(L"⚠️ Chưa có nội dung để tải lên");
@@ -319,8 +340,6 @@ void WindowManager::OnStartClicked() {
     uiManager_->AddMessage(L"🚀 Khởi động jet...");
 }
 
-//vị trí gọi: khi nút print được click.
-// WindowManager.cpp
 void WindowManager::OnPrintClicked() {
     if (!appController_ || !uiManager_) return; // kiểm tra AppController tồn tại
 
@@ -346,7 +365,6 @@ void WindowManager::OnPrintClicked() {
         }
     }
 }
-
 
 //vị trí gọi: khi nút stop được click.
 void WindowManager::OnStopClicked() {
@@ -381,7 +399,6 @@ void WindowManager::OnSetClicked() {
 	int count = uiManager_->GetCountValue();    // lấy số lượng in từ UI
     if (count > 0) {
 		appController_->SetCount(count); // gọi SetCount trong AppController
-        uiManager_->AddMessage(L"Đã đặt số lượng in: " + std::to_wstring(count));
     }
     else {
         uiManager_->AddMessage(L"❌ Số lượng phải lớn hơn 0");

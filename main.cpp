@@ -19,7 +19,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Tạo cửa sổ chính
-    if (!g_windowManager.CreateMainWindow(L"Linx Controller - MVC Đa Luồng", 520, 520)) {  //Gọi hàm trong WindowManager để tạo HWND.
+    if (!g_windowManager.CreateMainWindow(L"Linx Controller - BY BUI_VAN_HOANG", 520, 520)) {  //Gọi hàm trong WindowManager để tạo HWND.
         Logger::GetInstance().Write(L"Failed to create main window", 2);
         return -1;
     }

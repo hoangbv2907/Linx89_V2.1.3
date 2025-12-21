@@ -18,7 +18,7 @@
 #define WM_APP_PRINTER_UPDATE  (WM_APP + 2) 
 #define WM_APP_CONNECTION_UPDATE (WM_APP + 3)
 #define WM_APP_PRINT_PROGRESS  (WM_APP + 4)
-#define WM_APP_BUTTON_STATE    (WM_APP + 5)
+#define WM_APP_BUTTON_STATE	  (WM_APP + 5)
 
 // Forward declarations
 struct PrinterState;

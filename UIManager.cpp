@@ -56,7 +56,7 @@ void UIManager::CreateControls() {
     btnStart_.Create(hParent_, 20, 180, 140, 40, L"KHỞI ĐỘNG", IDC_BTN_START);
     btnPrint_.Create(hParent_, 180, 180, 140, 40, L"IN", IDC_BTN_PRINT);
     btnStop_.Create(hParent_, 340, 180, 140, 40, L"DỪNG", IDC_BTN_STOP);
-    btnClear_.Create(hParent_, 380, 305, 100, 20, L"XÓA NHẬT KÝ", IDC_BTN_CLEAR);
+    btnClear_.Create(hParent_, 380, 275, 100, 20, L"XÓA NHẬT KÝ", IDC_BTN_CLEAR);
     btnSet_.Create(hParent_, 420, 140, 60, 23, L"SET", IDC_BTN_SET);
 
     // Subclass các nút
@@ -67,18 +67,18 @@ void UIManager::CreateControls() {
     btnSet_.Subclass();
 
     // Dòng trạng thái
-    hPrinterState_ = CreateStatic(20, 240, 460, 24, L"TRẠNG THÁI: CHƯA KẾT NỐI");
-    SetWindowLongPtr(hPrinterState_, GWL_STYLE,
-        GetWindowLongPtr(hPrinterState_, GWL_STYLE) | SS_CENTER);
+   // hPrinterState_ = CreateStatic(20, 240, 460, 24, L"TRẠNG THÁI: CHƯA KẾT NỐI");
+   // SetWindowLongPtr(hPrinterState_, GWL_STYLE,
+    //    GetWindowLongPtr(hPrinterState_, GWL_STYLE) | SS_CENTER);
 
     // Status display
-    hStatusDisplay_ = CreateStatic(20, 270, 460, 24, L"CHƯA KẾT NỐI");
+    hStatusDisplay_ = CreateStatic(20, 240, 460, 24, L"CHƯA KẾT NỐI");
     SetWindowLongPtr(hStatusDisplay_, GWL_STYLE,
         GetWindowLongPtr(hStatusDisplay_, GWL_STYLE) | SS_CENTER);
 
     // Log box
-    CreateStatic(20, 305, 100, 20, L"NHẬT KÝ:");
-    messageLogger_->Create(hParent_, 20, 330, 460, 120);
+    CreateStatic(20, 275, 100, 20, L"NHẬT KÝ:");
+    messageLogger_->Create(hParent_, 20, 300, 460, 190);
 
     // Apply fonts
     ApplyFontToAllControls();

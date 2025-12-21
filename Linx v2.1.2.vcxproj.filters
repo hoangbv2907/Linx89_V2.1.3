@@ -62,9 +62,6 @@
     <ClInclude Include="Logger.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadSafeQueue.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="CommonDefs.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
@@ -74,7 +71,25 @@
     <ClInclude Include="CommonTypes.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Downloads\json.hpp">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PrintPersistData.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PrintPersistStorage.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
     <ClInclude Include="ResourceTracker.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadSafeQueue.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EncodingUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -102,6 +117,9 @@
     </ClCompile>
     <ClCompile Include="MessageLogger.cpp">
       <Filter>Header Files\UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="PrintPersistStorage.cpp">
+      <Filter>Header Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

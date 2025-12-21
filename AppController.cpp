@@ -11,6 +11,10 @@
 #include <thread>
 #include <algorithm>
 #include <future>
+#include "PrintPersistData.h"
+#include "PrintPersistStorage.h"
+#include "MessageBuilder.h"
+#include "EncodingUtils.h"
 
 // ================== Helper functions (namespace ẩn) ==================
 namespace {
@@ -53,6 +57,8 @@ AppController::AppController(HWND mainWindow)
     //== Khởi tạo các components chính ==
     printerModel_ = std::make_unique<PrinterModel>();   // Model lưu trạng thái máy in
     rciClient_ = std::make_unique<RciClient>();      // Client RCI Linx 8900
+    
+    LoadPrintDataOnStart();
 
     //== ĐĂNG KÝ CALLBACK LOG TỪ RCI CLIENT ==
     // Giả định RciClient cũ có SetMessageCallback giống bản mới
@@ -112,10 +118,9 @@ AppController::AppController(HWND mainWindow)
 
 AppController::~AppController() {
     Logger::GetInstance().Write(L"AppController destructor called");
-
     static std::atomic<bool> destructorCalled{ false };
     if (destructorCalled.exchange(true)) {
-        Logger::GetInstance().Write(L"AppController destructor already called - skipping");
+        Logger::GetInstance().Write(L"AppController destructor already called - skipping");;
         return;
     }
 
@@ -239,6 +244,33 @@ bool AppController::StopWorkerThread(int timeoutMs) {
     }
 
     return success;
+}
+
+void AppController::SavePrintDataOnExit()
+{
+    PrintPersistData data;
+
+    data.message = WideToUtf8(printerModel_->GetCurrentJobContent());
+    data.targetCount = printerModel_->GetTargetCount();
+    data.printedCount = printerModel_->GetCurrentCount();
+
+    PrintPersistStorage::Save(data);
+}
+
+void AppController::LoadPrintDataOnStart()
+{
+    auto opt = PrintPersistStorage::Load();
+    if (!opt.has_value())
+        return;
+
+    const auto& data = *opt;
+
+    printerModel_->SetCurrentJob(
+        Utf8ToWide(data.message),
+        data.targetCount
+    );
+
+    printerModel_->UpdateJobProgress(data.printedCount);
 }
 
 // ================== Emergency / Comprehensive Cleanup ==================
@@ -366,6 +398,17 @@ void AppController::SetCount(int count) {
     requestQueue_.Push(req);
 }
 
+void AppController::UploadContent(const std::wstring& content, int count) {
+    if (!ValidatePrintContent(content)) {
+        SendLogMessage(L"Nội dung in không hợp lệ", 2);
+        return;
+    }
+    if (count <= 0) count = printerModel_->GetTargetCount();
+    Request req{ RequestType::RequestUploadContent };
+    req.data = content;
+    req.count = count;
+    requestQueue_.Push(req);
+}
 void AppController::StartJet() {
     Request req{ RequestType::RequestStartJet };
     requestQueue_.Push(req);
@@ -513,6 +556,9 @@ void AppController::HandleRequest(const Request& request) {
         case RequestType::RequestStopJet:
             HandleStopJetRequest();
             break;
+        case RequestType::RequestUploadContent:
+            HandleUploadContentRequest(request);
+            break;
         default:
             break;
         }
@@ -592,15 +638,13 @@ void AppController::HandleStatusRequest() {
     if (!rciClient_->IsConnected()) {
         return;
     }
+    PrinterState st = printerModel_->GetState();
 
-    // Text mô tả tình trạng
-    std::wstring text = L"Jet=" + std::to_wstring(raw.jetState) +
-        L" Print=" + std::to_wstring(raw.printState) +
-        L" ErrMask=0x" + std::to_wstring(raw.errorMask);
-
+    std::wstring text = StateToText(st);
+    
     printerModel_->SetStatusText(text);
 
-    PrinterState st = printerModel_->GetState(); // lấy state cũ
+    // printerModel_->GetState(); // lấy state cũ
 
     // ===== Mapping FLAGS =====
     st.jetOn = raw.jetOn;
@@ -769,41 +813,44 @@ void AppController::HandleStopJetRequest() {
     SendStateUpdate();
 }
 
-void AppController::HandleStartPrintRequest(const Request& req) {
-
+void AppController::HandleStartPrintRequest(const Request& req)
+{
     if (!rciClient_ || !rciClient_->IsConnected()) {
         SendLogMessage(L"Chưa kết nối máy in", 2);
         return;
     }
 
-    // auto bật jet (chỉ gửi lệnh, không đổi state ở đây)
-    if (!HandleStartJetRequest())
+    // 1️⃣ Start Jet
+    HandleStartJetRequest();
+
+    // 2️⃣ Tạo message name duy nhất
+    static int jobId = 1;
+    std::string msgName = "JOB" + std::to_string(jobId++);
+    msgName.resize(8, '0'); // đảm bảo 8 ký tự
+
+    // 3️⃣ Encode nội dung in
+    auto fieldData = MessageBuilder().BuildSimpleTextField(req.data);
+
+    // 4️⃣ Download field / message
+    if (!rciClient_->DownloadRemoteField(fieldData)) {
+        SendLogMessage(L"Lỗi DownloadMessage", 2);
         return;
+    }
 
-    // chuẩn hóa tên message 8 ký tự (giữ nguyên logic cũ)
-    std::wstring wname = req.data;
-    if (wname.size() > 8) wname = wname.substr(0, 8);
-
-    std::string name;
-    int len = WideCharToMultiByte(CP_ACP, 0, wname.c_str(), -1, nullptr, 0, NULL, NULL);
-    name.resize(len);
-    WideCharToMultiByte(CP_ACP, 0, wname.c_str(), -1, &name[0], len, NULL, NULL);
-
-    if (!rciClient_->LoadMessage(name, (uint16_t)req.count)) {
+    // 5️⃣ Load message
+    if (!rciClient_->LoadMessage(msgName, (uint16_t)req.count)) {
         SendLogMessage(L"Lỗi LoadMessage", 2);
         return;
     }
 
+    // 6️⃣ Start print
     if (!rciClient_->StartPrint()) {
         SendLogMessage(L"Lỗi StartPrint", 2);
         return;
     }
 
-    // chỉ lưu thông tin job, KHÔNG ép state
     printerModel_->SetCurrentJob(req.data, req.count);
-
-    // thông báo để người dùng hiểu là đang chờ máy in
-    SendLogMessage(L"Đã gửi lệnh bắt đầu in, chờ trạng thái từ máy in...", 0);
+    SendLogMessage(L"Đã gửi job in mới (RCI chuẩn)", 0);
 }
 
 void AppController::HandleStopPrintRequest() {
@@ -817,6 +864,19 @@ void AppController::HandleStopPrintRequest() {
     // KHÔNG sửa PrinterState ở đây – đợi STATUS 0x14
     SendLogMessage(L"Đã gửi lệnh dừng in, chờ máy in phản hồi...", 0);
 }
+
+void AppController::HandleUploadContentRequest(const Request& request) {
+    int target = request.count;
+    if (target <= 0) target = 1;
+
+    printerModel_->SetCurrentJob(request.data, target);
+
+    SendLogMessage(
+        L"Đã cập nhật nội dung in và số lượng: " + std::to_wstring(target), 0);
+
+    SavePrintDataOnExit();
+}
+
 
 void AppController::HandleConnectRequest(const Request& req)
 {
@@ -882,8 +942,10 @@ void AppController::HandleConnectRequest(const Request& req)
 }
 
 void AppController::HandleSetCountRequest(const Request& request) {
-    printerModel_->SetCurrentJob(L"", request.count);
+    std::wstring currentContent = printerModel_->GetCurrentJobContent();
+    printerModel_->SetCurrentJob(currentContent, request.count);
     SendLogMessage(L"Đã đặt số lượng in: " + std::to_wstring(request.count));
+    SavePrintDataOnExit();
 }
 
 void AppController::TryReconnect() {

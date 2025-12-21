@@ -124,16 +124,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Downloads\json.hpp" />
     <ClInclude Include="AppController.h" />
     <ClInclude Include="ColorScheme.h" />
     <ClInclude Include="CommonDefs.h" />
     <ClInclude Include="CommonTypes.h" />
+    <ClInclude Include="EncodingUtils.h" />
     <ClInclude Include="FontManager.h" />
     <ClInclude Include="Logger.h" />
+    <ClInclude Include="MessageBuilder.h" />
     <ClInclude Include="MessageDef.h" />
     <ClInclude Include="MessageLogger.h" />
     <ClInclude Include="ModernButton.h" />
     <ClInclude Include="PrinterModel.h" />
+    <ClInclude Include="PrintPersistData.h" />
+    <ClInclude Include="PrintPersistStorage.h" />
     <ClInclude Include="RciClient.h" />
     <ClInclude Include="RequestQueue.h" />
     <ClInclude Include="ResourceTracker.h" />
@@ -147,6 +152,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MessageLogger.cpp" />
     <ClCompile Include="ModernButton.cpp" />
+    <ClCompile Include="PrintPersistStorage.cpp" />
     <ClCompile Include="RciClient.cpp" />
     <ClCompile Include="ToggleSwitch.cpp" />
     <ClCompile Include="UIManager.cpp" />
