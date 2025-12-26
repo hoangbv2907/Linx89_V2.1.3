@@ -10,7 +10,6 @@
 #include <memory>
 #include <functional>
 #include <string>
-
 #include "RciClient.h"       
 #include "PrinterModel.h"
 #include "MessageDef.h"
@@ -19,7 +18,6 @@
 #include "RequestQueue.h"
 #include "ResourceTracker.h"
 
-// Forward declarations
 class RciClient;
 class PrinterModel;
 
@@ -27,13 +25,11 @@ class AppController {
 public:
 	AppController(HWND mainWindow);
 	~AppController();
-
 	//==== Cleanup routines ====
 	// đóng socket ngay lập tức, dừng jet, reset state
 	void EmergencyCleanup();
 	// tắt ứng dụng bình thường
 	void ComprehensiveCleanup();
-
 	//===== Public API for UI - chỉ push request vào queue =====
 	void Connect(const std::wstring& ipAddress);
 	void Disconnect();
@@ -43,7 +39,7 @@ public:
 	void UploadContent(const std::wstring& content, int count);
 	void StartJet();
 	void StopJet();
-
+	void UploadRemoteFieldData(const std::wstring& fieldName, const std::wstring& value);
 	//===== Validation methods ===
 	bool ValidatePrintContent(const std::wstring& content);
 	bool ValidatePrintCount(int count);
@@ -58,32 +54,30 @@ public:
 	bool StopWorkerThread(int timeoutMs);   //dừng worker thread với timeout
 	void SavePrintDataOnExit();
 	void LoadPrintDataOnStart();
+	void SendStateUpdate();
 private:
 	ResourceTracker resourceTracker;               // Quản lý cleanup resources
 	HWND mainWindow_;                              // Handle của cửa sổ chính
 	std::unique_ptr<RciClient> rciClient_;         // Client RCI Linx 8900
 	std::unique_ptr<PrinterModel> printerModel_;   // Model lưu trạng thái máy in
-
 	//=== Worker thread and request queue ====
 	std::thread workerThread_;            // Thread xử lý nền
 	std::atomic<bool> running_{ false };  // Biến điều khiển vòng lặp worker thread
 	RequestQueue requestQueue_;           // Queue chứa các request từ UI
 	std::chrono::steady_clock::time_point lastCommandTime_;
 	std::atomic<bool> jetTransitioning_{ false }; // Biến để theo dõi trạng thái chuyển đổi jet
-
 	//== Reconnect management ==
 	std::atomic<bool> autoReconnect_{ true };   // Tự động reconnect khi mất kết nối
 	std::atomic<int> reconnectAttempts_{ 0 };   // Số lần đã thử reconnect
 	const int MAX_RECONNECT_ATTEMPTS = 5;       // Giới hạn số lần reconnect
 	bool lastJetOn_ = false;
 	bool hasInitialStatus_ = false;		// trạng thái jet lần cuối
-
+	bool persistLoaded_ = false;
 	//== Worker thread methods ==
 	void WorkerLoop();                         // Vòng lặp chính của worker thread
 	void HandleRequest(const Request& request); // Xử lý từng request cụ thể
 	void DoPeriodicPoll();                    // Poll trạng thái định kỳ
 	void TryReconnect();                      // Thử reconnect nếu mất kết nối
-
 	//==== Request Handlers =====
 	void HandleStatusRequest();                     // RCI STATUS 0x14
 	void HandlePrintCountRequest();                 // Hiện vẫn mô phỏng bằng model
@@ -95,15 +89,13 @@ private:
 	void HandleStopJetRequest();                            // tắt jet
 	void HandleConnectRequest(const Request& request);      // kết nối
 	void HandleDisconnectRequest();                         // ngắt kết nối
-
+	void HandleUploadRemoteFieldRequest(const Request& req);	// tải dữ liệu trường từ xa
 	//== State machine logic ==
 	void UpdatePrinterState();        // Cập nhật trạng thái máy in theo state machine
 	bool ShouldPollStatus() const;    // có nên poll trạng thái không
 	bool ShouldGetPrintCount() const; // có nên lấy số lượng in không
 	bool ShouldAutoStartJet() const;  // có nên tự động bật jet không
-
 	//=================== Messaging to UI ==================
-	void SendStateUpdate();                         // Gửi cập nhật trạng thái máy in tới UI
 	void SendLogMessage(const std::wstring& text, int level = 0); // Gửi thông điệp log tới UI
 	void SendConnectionUpdate(bool connected);      // Gửi cập nhật trạng thái kết nối tới UI
 };

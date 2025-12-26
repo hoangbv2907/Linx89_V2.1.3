@@ -2,7 +2,6 @@
 #include <windowsx.h>
 #include <uxtheme.h>
 #include <algorithm>
-
 #ifndef GWL_USERDATA
 #define GWL_USERDATA (-21)
 #endif
@@ -14,7 +13,6 @@ ModernButton::~ModernButton() {
         RemoveWindowSubclass(hButton, ButtonSubclassProc, 1);
     }
 }
-
 //Tạo control REAL button thực tế
 HWND ModernButton::Create(HWND hParent, int x, int y, int w, int h, const std::wstring& text, int id) {
     caption = text;
@@ -23,11 +21,9 @@ HWND ModernButton::Create(HWND hParent, int x, int y, int w, int h, const std::w
         x, y, w, h, hParent, (HMENU)(INT_PTR)id, NULL, NULL);
     return hButton;
 }
-
 //Subclass procedure để xử lý vẽ và sự kiện chuột
 LRESULT CALLBACK ModernButton::ButtonSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id, DWORD_PTR refData) {
 	ModernButton* p = reinterpret_cast<ModernButton*>(refData); // Lấy con trỏ đến đối tượng ModernButton
-
 	// Xử lý các thông điệp
     switch (msg) {
 	case WM_MOUSEMOVE:  // Chuột di chuyển vào button
@@ -43,27 +39,22 @@ LRESULT CALLBACK ModernButton::ButtonSubclassProc(HWND hwnd, UINT msg, WPARAM wp
 	//  Trả về xử lý mặc định
     return DefSubclassProc(hwnd, msg, wp, lp);
 }
-
 // Hàm vẽ hình chữ nhật bo góc
 void ModernButton::Subclass() {
     if (hButton) {
         SetWindowSubclass(hButton, ButtonSubclassProc, 1, (DWORD_PTR)this);
     }
 }
-
 //Hàm vẽ button
 void ModernButton::Draw(LPDRAWITEMSTRUCT dis) {
 	HDC hdc = dis->hDC; // Lấy device context để vẽ
 	RECT rc = dis->rcItem;  // Lấy vùng vẽ
-
 	// Kiểm tra trạng thái button
     bool isDisabled = (GetWindowLongPtr(hButton, GWL_STYLE) & WS_DISABLED);
     bool isHighlighted = (GetWindowLongPtr(dis->hwndItem, GWL_USERDATA) == 1);
-
 	// Xác định màu sắc dựa trên trạng thái
     COLORREF fillColor = baseColor;
     COLORREF txtColor = textColor;
-
 	// Thay đổi màu sắc dựa trên trạng thái
 	if (isDisabled) {   // Nếu button bị vô hiệu hóa
         fillColor = RGB(240, 240, 240);
@@ -89,7 +80,6 @@ void ModernButton::Draw(LPDRAWITEMSTRUCT dis) {
     }
 	// Vẽ nền button
     DrawRoundedRect(hdc, rc, fillColor, 8);
-
 	// Vẽ viền button
     HPEN pen = CreatePen(PS_SOLID, 1, RGB(150, 150, 150));
     HGDIOBJ oldPen = SelectObject(hdc, pen);
@@ -98,27 +88,22 @@ void ModernButton::Draw(LPDRAWITEMSTRUCT dis) {
     SelectObject(hdc, oldPen);
     SelectObject(hdc, oldBrush);
     DeleteObject(pen);
-
 	// Vẽ văn bản trên button
     SetBkMode(hdc, TRANSPARENT);
     ::SetTextColor(hdc, txtColor);
     DrawTextW(hdc, caption.c_str(), -1, (LPRECT)&rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
-
 // Hàm xử lý vẽ button
 void ModernButton::btnSetDraw(LPDRAWITEMSTRUCT dis) {
-   
     HDC hdc = dis->hDC;
     RECT rc = dis->rcItem;
 	// Trạng thái button
     bool isEnabled = !(dis->itemState & ODS_DISABLED);
     bool isPressed = (dis->itemState & ODS_SELECTED);
     bool isHover = (dis->itemState & ODS_HOTLIGHT);
-
 	// Xác định màu sắc dựa trên trạng thái
     COLORREF fillColor = RGB(220, 220, 220);
     COLORREF textColor = RGB(30, 30, 30);
-
 	// Thay đổi màu sắc dựa trên trạng thái
     if (!isEnabled) {
         fillColor = RGB(240, 240, 240);
@@ -147,7 +132,6 @@ void ModernButton::btnSetDraw(LPDRAWITEMSTRUCT dis) {
     SetTextColor(hdc, textColor);
     DrawTextW(hdc, L"Set", -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
-
 // Hàm xử lý sự kiện chuột
 void ModernButton::HandleMouse(UINT msg) {
     switch (msg) {
@@ -159,42 +143,35 @@ void ModernButton::HandleMouse(UINT msg) {
             InvalidateRect(hButton, NULL, TRUE);
         }
         break;
-
 	case WM_MOUSELEAVE: // Chuột rời khỏi button
         isHover = false;
         isPressed = false;
         InvalidateRect(hButton, NULL, TRUE);
         break;
-
 	case WM_LBUTTONDOWN:    // Chuột nhấn xuống
         isPressed = true;
         InvalidateRect(hButton, NULL, TRUE);
         break;
-
 	case WM_LBUTTONUP:  // Chuột thả ra
         isPressed = false;
         InvalidateRect(hButton, NULL, TRUE);
         break;
     }
 }
-
 //Các hàm thiết lập thuộc tính
 void ModernButton::SetText(const std::wstring& text) {
 	caption = text; // Cập nhật văn bản
 	if (hButton) InvalidateRect(hButton, NULL, TRUE);   // Yêu cầu vẽ lại button
 }
-
 // Thiết lập màu nền button
 void ModernButton::SetBaseColor(COLORREF color) {
 	baseColor = color;  // Cập nhật màu nền
 	if (hButton) InvalidateRect(hButton, NULL, TRUE);   // Yêu cầu vẽ lại button
 }
-
 //Cập nhật lại giao diện button
 void ModernButton::Redraw() {
 	if (hButton) InvalidateRect(hButton, NULL, TRUE);   // Yêu cầu vẽ lại button
 }
-
 // Hàm vẽ hình chữ nhật bo góc
 void ModernButton::DrawRoundedRect(HDC hdc, const RECT& rc, COLORREF fill, int radius) {
     HBRUSH brush = CreateSolidBrush(fill);
@@ -206,8 +183,7 @@ void ModernButton::DrawRoundedRect(HDC hdc, const RECT& rc, COLORREF fill, int r
     DeleteObject(brush);
 }
 
-void ModernButton::SetCaption(const std::wstring& text)
-{
+void ModernButton::SetCaption(const std::wstring& text){
     caption = text;
     SetWindowTextW(hButton, text.c_str());
 }

@@ -1,45 +1,58 @@
-﻿#include "PrintPersistStorage.h"
+﻿#include <windows.h>
+#include <filesystem>
+#include "Logger.h"
+#include "PrintPersistStorage.h"
 #include <fstream>
 #include "json.hpp"
+#include <ShlObj.h>   // SHGetFolderPathW
+#pragma comment(lib, "Shell32.lib")
 namespace nlohmann {
     using json = basic_json<>;
 }
 using json = nlohmann::json;
-static const char* FILE_NAME = "last_print_data.json";
 
-bool PrintPersistStorage::Save(const PrintPersistData& data) {
+static std::wstring GetPersistDir(){
+    wchar_t path[MAX_PATH] = { 0 };
+    // %LOCALAPPDATA%
+    SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, path);
+    std::wstring dir = std::wstring(path) + L"\\LinxController";
+    CreateDirectoryW(dir.c_str(), nullptr);// Tạo folder nếu chưa tồn tại
+    return dir;
+}
+
+static std::filesystem::path GetPersistPath(){
+    return std::filesystem::path(GetPersistDir()) / L"last_print_data.json";
+}
+
+bool PrintPersistStorage::Save(const PrintPersistData& data){
+    auto path = GetPersistPath();
     json j;
     j["message"] = data.message;
     j["target"] = data.targetCount;
     j["printed"] = data.printedCount;
-
-    std::ofstream ofs(FILE_NAME);
+    std::ofstream ofs(path, std::ios::binary);
     if (!ofs) return false;
     ofs << j.dump(4);
+    ofs.close();
     return true;
 }
 
-std::optional<PrintPersistData> PrintPersistStorage::Load() {
-    std::ifstream ifs(FILE_NAME);
-    if (!ifs)
-        return std::nullopt;
+std::optional<PrintPersistData> PrintPersistStorage::Load(){
+    auto path = GetPersistPath();
+    std::ifstream ifs(path, std::ios::binary);
+    if (!ifs) return std::nullopt;
 
     try {
         json j;
-        ifs >> j;   // ❗ có thể throw
-
+        ifs >> j;
         PrintPersistData data;
         data.message = j.value("message", "");
         data.targetCount = j.value("target", 0);
         data.printedCount = j.value("printed", 0);
-
         return data;
     }
     catch (const nlohmann::json::exception& e) {
-        // ⚠️ JSON lỗi → KHÔNG CRASH
-        // Có thể log nếu muốn
-        // Logger::GetInstance().Write(L"JSON load error", 2);
-
+        Logger::GetInstance().Write(L"[Persist] Load FAILED (JSON parse error)", 2);
         return std::nullopt;
     }
 }

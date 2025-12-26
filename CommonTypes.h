@@ -9,18 +9,13 @@ enum class PrinterStateType {
 	Reconnecting,   //dang ket noi lai
 	StartingJet,    //dang bat jet
 	StopingJet,     //dang tat jet
-
 	Idle,           //jet off, máy vừa bật lên
     Ready,           // paused jet on, print off
 	Printing,       //jet on, print on
 	Error,          // có lỗi
 	Unknown            // trạng thái không xác định
-    
 };
 
-//
-// Request Types
-//
 enum class RequestType {
     RequestStatus,
     RequestPrintCount,
@@ -31,15 +26,12 @@ enum class RequestType {
     RequestStopJet,
     RequestConnect,
     RequestDisconnect,
-    RequestUploadContent
+    RequestUploadContent,
+    RequestUploadRemoteField
 };
 
-//
-// Printer State Structure (lưu trong PrinterModel)
-//
 struct PrinterState {
     PrinterStateType status = PrinterStateType::Disconnected;
-
     bool jetOn = false;
     bool printing = false;
     bool jetTransitioning = false;
@@ -56,23 +48,19 @@ struct PrinterState {
             status == PrinterStateType::Idle ||
             status == PrinterStateType::Printing;
     }
-
     bool CanPrint() const {
         return IsConnected() && status != PrinterStateType::Error;
     }
 };
 
-//
-// Request Structure
-//
 struct Request {
     RequestType type;
     std::vector<uint8_t> payload;
     std::wstring data;      // message text
     int count = 0;
     std::wstring ipAddress; // not used but kept for compatibility
+	std::wstring fieldName; // for remote field updates
 };
-
 // Convert PrinterState to human-readable text
 inline std::wstring StateToText(const PrinterState& st) {
     switch (st.status) {

@@ -9,126 +9,91 @@
 UIManager::UIManager() {}
 
 UIManager::~UIManager() {}
-
 //Lưu handle của cửa sổ cha vào biến thành viên hParent_.
 bool UIManager::Initialize(HWND hParent) {
     hParent_ = hParent;
-
 	// Đảm bảo rằng thư viện Rich Edit được tải
     LoadLibraryW(L"Msftedit.dll");
-
 	// Khởi tạo các điều khiển tùy chỉnh
     toggleSwitch_ = std::make_unique<ToggleSwitch>();
     messageLogger_ = std::make_unique<MessageLogger>();
-
-    Logger::GetInstance().Write(L"UIManager initialized");
     return true;
 }
-
 // Tạo và cấu hình tất cả các điều khiển giao diện người dùng
 void UIManager::CreateControls() {
     if (!hParent_) return;
-
     // IP Address + toggle
     CreateStatic(20, 20, 100, 20, L"Địa chỉ IP:");
     hIpAddress_ = CreateWindowW(WC_IPADDRESSW, L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP,
         150, 20, 150, 23, hParent_, NULL, NULL, NULL);
-
     toggleSwitch_->Create(hParent_, 320, 20, 60, 26, IDC_TOGGLE);
-
     // Nội dung in
     CreateStatic(20, 60, 100, 20, L"Nội dung in:");
     hInputValue_ = CreateEdit(150, 60, 240, 60, L"");
     hBtnUpload_ = CreateButton(400, 60, 80, 60, L"Tải Lên", IDC_BTN_UPLOAD);
-
     // Số lượng
     CreateStatic(20, 140, 100, 20, L"Số lượng:");
     hCount_ = CreateEdit(150, 140, 80, 23, L"1");
-
     // Hiển thị số lượng đã đạt được
     CreateStatic(240, 140, 120, 23, L"Đã đạt được:");
     hCurrentCount_ = CreateWindowW(L"STATIC", L"0",
         WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE,
-        350, 140, 60, 22, hParent_,
-        (HMENU)IDC_CURRENT_COUNT, NULL, NULL);
-
+        350, 140, 60, 22, hParent_,(HMENU)IDC_CURRENT_COUNT, NULL, NULL);
     // Modern buttons
     btnStart_.Create(hParent_, 20, 180, 140, 40, L"KHỞI ĐỘNG", IDC_BTN_START);
     btnPrint_.Create(hParent_, 180, 180, 140, 40, L"IN", IDC_BTN_PRINT);
     btnStop_.Create(hParent_, 340, 180, 140, 40, L"DỪNG", IDC_BTN_STOP);
     btnClear_.Create(hParent_, 380, 275, 100, 20, L"XÓA NHẬT KÝ", IDC_BTN_CLEAR);
     btnSet_.Create(hParent_, 420, 140, 60, 23, L"SET", IDC_BTN_SET);
-
     // Subclass các nút
     btnStart_.Subclass();
     btnPrint_.Subclass();
     btnStop_.Subclass();
     btnClear_.Subclass();
     btnSet_.Subclass();
-
-    // Dòng trạng thái
-   // hPrinterState_ = CreateStatic(20, 240, 460, 24, L"TRẠNG THÁI: CHƯA KẾT NỐI");
-   // SetWindowLongPtr(hPrinterState_, GWL_STYLE,
-    //    GetWindowLongPtr(hPrinterState_, GWL_STYLE) | SS_CENTER);
-
     // Status display
     hStatusDisplay_ = CreateStatic(20, 240, 460, 24, L"CHƯA KẾT NỐI");
-    SetWindowLongPtr(hStatusDisplay_, GWL_STYLE,
+        SetWindowLongPtr(hStatusDisplay_, GWL_STYLE,
         GetWindowLongPtr(hStatusDisplay_, GWL_STYLE) | SS_CENTER);
-
     // Log box
     CreateStatic(20, 275, 100, 20, L"NHẬT KÝ:");
     messageLogger_->Create(hParent_, 20, 300, 460, 190);
-
     // Apply fonts
     ApplyFontToAllControls();
-
     // Set default IP
     SendMessage(hIpAddress_, IPM_SETADDRESS, 0, (LPARAM)MAKEIPADDRESS(127, 0, 0, 1));
-
     // Cập nhật giao diện theo trạng thái ban đầu
     PrinterState initialState;
     initialState.status = PrinterStateType::Disconnected;
     initialState.statusText = L"Chưa kết nối";
     UpdateButtonStates(initialState);
     UpdatePrinterUIState(initialState);
-
-    Logger::GetInstance().Write(L"UI controls created");
 }
-
 // Thêm một thông điệp vào nhật ký hiển thị trong giao diện người dùng
 void UIManager::AddMessage(const std::wstring& text) {
 	if (messageLogger_) {   // Kiểm tra con trỏ thông điệp nhật ký không rỗng trước khi sử dụng
 		messageLogger_->AddMessage(text);   // Thêm thông điệp vào nhật ký
     }
 }
-
 // Xóa tất cả thông điệp khỏi nhật ký hiển thị trong giao diện người dùng
 void UIManager::ClearMessages() {
 	if (messageLogger_) {   // Kiểm tra con trỏ thông điệp nhật ký không rỗng trước khi sử dụng
 		messageLogger_->Clear();    // Xóa tất cả thông điệp khỏi nhật ký
     }
 }
-
 // Cập nhật dòng trạng thái của máy in trong giao diện người dùng
 void UIManager::UpdatePrinterStatus(const std::wstring& text) {
 	if (hStatusDisplay_) {  // Kiểm tra handle của dòng trạng thái không rỗng trước khi sử dụng
 		SetWindowTextW(hStatusDisplay_, text.c_str());  // Cập nhật văn bản của dòng trạng thái
     }
 }
-
 // Cập nhật trạng thái UI của máy in dựa trên trạng thái hiện tại
-void UIManager::UpdatePrinterUIState(PrinterState state)
-{
+void UIManager::UpdatePrinterUIState(PrinterState state){
     // Không làm gì nếu không đổi trạng thái
-    if (state.status == lastState_)
-        return;
-
+    bool statusChanged = (state.status != lastState_);
     lastState_ = state.status;
-
     std::wstring stateText = L"TRẠNG THÁI: ";
     COLORREF bgColor = RGB(240, 240, 240); // default xám
-
     switch (state.status)
     {
     case PrinterStateType::Disconnected:
@@ -161,38 +126,53 @@ void UIManager::UpdatePrinterUIState(PrinterState state)
         bgColor = RGB(255, 140, 140); // đỏ
         break;
     }
-
     // Cập nhật text trạng thái
     if (hPrinterState_)
         SetWindowTextW(hPrinterState_, stateText.c_str());
-
-
-    // =======================
     // ⭐ TỐI ƯU: KHÔNG ĐỔI BRUSH NẾU MÀU KHÔNG ĐỔI
-    // =======================
     static COLORREF lastColor = RGB(255, 255, 255);
-    if (bgColor == lastColor)
-        return;
-
+    if (bgColor == lastColor) return;
     lastColor = bgColor;
-
     // Đổi nền cửa sổ
     HBRUSH brush = CreateSolidBrush(bgColor);
     SetClassLongPtr(hParent_, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
-
     InvalidateRect(hParent_, NULL, TRUE);
 }
-
 // Cập nhật trạng thái các nút dựa trên trạng thái hiện tại của máy in
 void UIManager::UpdateButtonStates(PrinterState state) {
 	UpdateButtonStateForPrinterState(state);    // Cập nhật trạng thái nút dựa trên trạng thái máy in
-
 }
 
+void UIManager::UpdateJobFields(const std::wstring& content, int target, int printed){
+    // 0) Nếu user đang sửa và đã dirty, tuyệt đối không overwrite
+    if (editingJobFields_ && jobDirtyByUser_) {
+        // nhưng vẫn cho phép cập nhật printedCount nếu bạn muốn:
+        if (hCurrentCount_ && printed != lastPrinted_) {
+            lastPrinted_ = printed;
+            SetWindowTextW(hCurrentCount_, std::to_wstring(printed).c_str());
+        }
+        return;
+    }
+    // 1) Nếu nội dung giống hệt lần trước thì bỏ qua để chống spam
+    if (content == lastJobContent_ && target == lastTarget_ && printed == lastPrinted_) {
+        return;
+    }
+    // 2) Chỉ SetWindowText cho field nào THẬT SỰ đổi
+    if (hInputValue_ && content != lastJobContent_) {
+        lastJobContent_ = content;
+        SetWindowTextW(hInputValue_, content.c_str());
+    }
+    if (hCount_ && target != lastTarget_) {
+        lastTarget_ = target;
+        SetWindowTextW(hCount_, std::to_wstring(target).c_str());
+    }
+    if (hCurrentCount_ && printed != lastPrinted_) {
+        lastPrinted_ = printed;
+        SetWindowTextW(hCurrentCount_, std::to_wstring(printed).c_str());
+    }
+}
 // Cập nhật trạng thái của các nút dựa trên trạng thái hiện tại của máy in
-
-void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
-{
+void UIManager::UpdateButtonStateForPrinterState(PrinterState state){
     // 🔒 HARD LOCK: Jet đang chuyển trạng thái
     if (state.jetTransitioning)
     {
@@ -201,13 +181,8 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
         EnableWindow(btnPrint_.GetHandle(), FALSE);
         EnableWindow(hBtnUpload_, FALSE);
         EnableWindow(btnSet_.GetHandle(), FALSE);
-
-        Logger::GetInstance().Write(
-            L"[UI] Buttons locked: jetTransitioning = TRUE");
-
         return; // ⛔ TUYỆT ĐỐI KHÔNG CHẠY LOGIC DƯỚI
     }
-
     // ===== logic bình thường =====
     bool upload = false;
     bool startJet = false;
@@ -215,14 +190,12 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
     bool print = false;
     bool stopPrint = false;
     bool setCount = false;
-
     switch (state.status)
     {
     case PrinterStateType::Disconnected:
     case PrinterStateType::Connecting:
     case PrinterStateType::Error:
         break;
-
     case PrinterStateType::Idle:
         upload = true;
         startJet = true;
@@ -230,7 +203,6 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
         btnPrint_.SetCaption(L"IN");
         btnPrint_.SetBaseColor(RGB(200, 200, 200));
         break;
-
     case PrinterStateType::Ready:
         upload = true;
         startJet = false;
@@ -241,7 +213,6 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
         btnPrint_.SetCaption(L"BẮT ĐẦU IN");
         btnPrint_.SetBaseColor(RGB(0, 180, 0));
         break;
-
     case PrinterStateType::Printing:
         stopJet = true;
         print = true;
@@ -250,80 +221,63 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state)
         btnPrint_.SetBaseColor(RGB(255, 160, 0));
         break;
     }
-
     EnableWindow(hBtnUpload_, upload);
     EnableWindow(btnStart_.GetHandle(), startJet);
     EnableWindow(btnPrint_.GetHandle(), print || stopPrint);
     EnableWindow(btnStop_.GetHandle(), stopJet);
     EnableWindow(btnSet_.GetHandle(), setCount);
 }
-
-
 // Cài đặt trạng thái của toggle switch và đồng bộ giao diện
 void UIManager::SetToggleState(bool state) {
-    // THÊM: Debug logging
     Logger::GetInstance().Write(L"UIManager::SetToggleState: " +
         std::wstring(state ? L"ON" : L"OFF") +
         L", toggleSwitch_ exists: " + std::wstring(toggleSwitch_ ? L"YES" : L"NO"));
-
 	isToggleOn_ = state;    // Cập nhật trạng thái bên trong
 	if (toggleSwitch_) {    // Kiểm tra con trỏ toggle không rỗng trước khi sử dụng
 		toggleSwitch_->SetState(state); // Cập nhật trạng thái của toggle switch
-        
     }
 }
-
 // Trả về trạng thái hiện tại của toggle switch
 bool UIManager::IsToggleOn() const {
     return isToggleOn_;
 }
-
 // Lấy địa chỉ IP từ điều khiển IP Address và trả về dưới dạng chuỗi
 std::wstring UIManager::GetIPAddress() const {
 	if (!hIpAddress_) return L"";   // Kiểm tra handle của điều khiển IP Address không rỗng trước khi sử dụng
-
 	DWORD ip = 0;   // Biến để lưu địa chỉ IP
 	SendMessage(hIpAddress_, IPM_GETADDRESS, 0, (LPARAM)&ip);   // Lấy địa chỉ IP từ điều khiển
 	BYTE a = (ip >> 0) & 0xFF;  // Trích xuất từng byte của địa chỉ IP
     BYTE b = (ip >> 8) & 0xFF;
     BYTE c = (ip >> 16) & 0xFF;
     BYTE d = (ip >> 24) & 0xFF;
-
 	wchar_t buf[32];    // Bộ đệm để định dạng địa chỉ IP
 	swprintf_s(buf, L"%d.%d.%d.%d", d, c, b, a);    // Định dạng địa chỉ IP thành chuỗi
 	return std::wstring(buf);   // Trả về địa chỉ IP dưới dạng chuỗi
 }
-
 // Lấy văn bản nhập từ điều khiển nhập liệu và trả về dưới dạng chuỗi
 std::wstring UIManager::GetInputText() const {
 	if (!hInputValue_) return L"";  // Kiểm tra handle của điều khiển nhập liệu không rỗng trước khi sử dụng
-
 	int len = GetWindowTextLengthW(hInputValue_);   // Lấy độ dài văn bản trong điều khiển
 	std::wstring s(len + 1, L'\0'); // Tạo chuỗi với kích thước đủ lớn để chứa văn bản
 	GetWindowTextW(hInputValue_, &s[0], (int)s.size()); // Lấy văn bản từ điều khiển
 	s.resize(len);  // Thay đổi kích thước chuỗi để loại bỏ ký tự null thừa
 	return s;   // Trả về văn bản nhập dưới dạng chuỗi
 }
-
 // Lấy giá trị số lượng từ điều khiển nhập liệu và trả về dưới dạng số nguyên
 int UIManager::GetCountValue() const {
 	if (!hCount_) return 1; // Kiểm tra handle của điều khiển số lượng không rỗng trước khi sử dụng
-
 	wchar_t buf[16] = { 0 };    // Bộ đệm để lưu văn bản số lượng
 	GetWindowTextW(hCount_, buf, 16);   // Lấy văn bản từ điều khiển số lượng
 	return _wtoi(buf);  // Chuyển đổi văn bản thành số nguyên và trả về
 }
-
 // Xác thực đầu vào địa chỉ IP
 bool UIManager::ValidateInput() const {
 	std::wstring ip = GetIPAddress();   // Lấy địa chỉ IP từ điều khiển
 	return !ip.empty() && ip != L"0.0.0.0" && ip != L"..";  // Kiểm tra địa chỉ IP không rỗng và không phải là địa chỉ mặc định không hợp lệ
 }
-
 // Xử lý vẽ tùy chỉnh cho các điều khiển owner-draw
 void UIManager::HandleOwnerDraw(LPDRAWITEMSTRUCT dis) {
 	if (!dis) return;   // Kiểm tra con trỏ DRAWITEMSTRUCT không rỗng trước khi sử dụng
-
 	// Xác định điều khiển dựa trên CtlID và gọi hàm vẽ tương ứng
     switch (dis->CtlID) {
     case IDC_TOGGLE:
@@ -348,12 +302,9 @@ void UIManager::HandleOwnerDraw(LPDRAWITEMSTRUCT dis) {
         break;
     }
 }
-
 // Áp dụng font mặc định cho tất cả các điều khiển giao diện người dùng
 void UIManager::ApplyFontToAllControls() {
 	HFONT defaultFont = FontManager::GetInstance().GetDefaultFont();    // Lấy font mặc định từ FontManager
-
-	// Danh sách tất cả các điều khiển cần áp dụng font
     HWND allControls[] = {
         hIpAddress_, hInputValue_, hCount_, hStatusDisplay_, hPrinterState_,
         hBtnUpload_, hCurrentCount_
@@ -364,12 +315,10 @@ void UIManager::ApplyFontToAllControls() {
             SendMessage(hCtrl, WM_SETFONT, (WPARAM)defaultFont, TRUE);
         }
     }
-
     if (messageLogger_) {
         messageLogger_->SetFont(defaultFont);
     }
 }
-
 // Tạo một điều khiển tĩnh (static control)
 HWND UIManager::CreateStatic(int x, int y, int w, int h, const wchar_t* text) {
     return CreateWindowW(L"STATIC", text, WS_CHILD | WS_VISIBLE, x, y, w, h, hParent_, NULL, NULL, NULL);

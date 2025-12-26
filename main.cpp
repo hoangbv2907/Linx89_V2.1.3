@@ -11,32 +11,26 @@ static WindowManager g_windowManager;  //instance toàn cục để quản lý c
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) { //điểm bắt đầu chương trình Win32
     // Initialize logger
     Logger::GetInstance().Write(L"Linx Controller starting...");
-
     // Khởi tạo WindowManager
     if (!g_windowManager.Initialize(hInstance)) {
         Logger::GetInstance().Write(L"Failed to initialize WindowManager", 2);
         return -1;
     }
-
     // Tạo cửa sổ chính
     if (!g_windowManager.CreateMainWindow(L"Linx Controller - BY BUI_VAN_HOANG", 520, 520)) {  //Gọi hàm trong WindowManager để tạo HWND.
         Logger::GetInstance().Write(L"Failed to create main window", 2);
         return -1;
     }
-
     // Show và refresh cửa sổ
     ShowWindow(g_windowManager.GetHwnd(), nCmdShow);    //hiển thị window theo style (normal, minimized…).
     UpdateWindow(g_windowManager.GetHwnd());            //yêu cầu Windows vẽ ngay nội dung.
-
     Logger::GetInstance().Write(L"Application started successfully");
-
     // vòng lặp chính
     MSG msg = {};
     while (GetMessage(&msg, nullptr, 0, 0)) {   //nhận message trong hàng đợi (chuột, bàn phím, redraw, timer, socket notify…)
         TranslateMessage(&msg);                 //xử lý phím (WM_KEYDOWN → WM_CHAR)
         DispatchMessage(&msg);                  //chuyển message đến WndProc của WindowManager
     }
-
     //thoát ứng dụng
     Logger::GetInstance().Write(L"Application shutting down");
     return (int)msg.wParam;

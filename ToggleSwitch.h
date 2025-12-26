@@ -6,7 +6,6 @@ class ToggleSwitch {
 public:
     ToggleSwitch();
     ~ToggleSwitch();
-
 	// Tạo control Win32
     HWND Create(HWND hParent, int x, int y, int width, int height, int id);
 	// Vẽ công tắc

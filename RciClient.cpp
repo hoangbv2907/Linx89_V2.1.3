@@ -5,22 +5,33 @@
 #include <sstream>
 #include <iomanip>
 #include "AppController.h"
-
 #include <iostream> 
 #include <string>    
 
 using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
-// =========================================================
-// Constructor / Destructor
-// =========================================================
+
+static void AppendNullTerminated(std::vector<uint8_t>& out, const std::string& s, size_t maxBytesNoNull){
+    size_t n = min(s.size(), maxBytesNoNull);
+    out.insert(out.end(), s.begin(), s.begin() + n);
+    out.push_back(0x00); // null terminator
+}
+
+static std::vector<uint8_t> BuildMsgName16(const std::string& nameOpt){
+    std::vector<uint8_t> buf(16, 0x00);
+    if (!nameOpt.empty()) {
+        size_t n = std::min<size_t>(15, nameOpt.size());
+        memcpy(buf.data(), nameOpt.data(), n);
+        buf[n] = 0x00;
+    }
+    return buf;
+}
+
 RciClient::RciClient() : sock_(INVALID_SOCKET), connected_(false), port_(0) {
     WSADATA wsa;
     int wsaResult = WSAStartup(MAKEWORD(2, 2), &wsa);
     if (wsaResult != 0) {
-        // Handle error, e.g., throw, log, or set a flag
         std::wcerr << L"WSAStartup failed with error: " << wsaResult << std::endl;
-        // Optionally, you can set connected_ = false or take other action
     }
 }
 
@@ -28,6 +39,7 @@ RciClient::~RciClient() {
     Disconnect();
     WSACleanup();
 }
+
 static std::wstring WsaErrorToString(int err) {
     wchar_t* msg = nullptr;
     FormatMessageW(
@@ -45,62 +57,45 @@ static std::wstring WsaErrorToString(int err) {
     }
     return out;
 }
-
-// =========================================================
 // Connection Management
-// =========================================================
-
 bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeoutMs) {
     // 1. Đảm bảo bất kỳ kết nối cũ nào cũng được đóng bên ngoài mutex
     SOCKET oldSock = INVALID_SOCKET;
-
     {
         std::lock_guard<std::mutex> lock(mtx_);
-
         if (connected_ || sock_ != INVALID_SOCKET) {
-            // đánh dấu disconnect
-            connected_ = false;
+            connected_ = false;// đánh dấu disconnect
             oldSock = sock_;
             sock_ = INVALID_SOCKET;
         }
     }
-
     if (oldSock != INVALID_SOCKET) {
         ::shutdown(oldSock, SD_BOTH);
         ::closesocket(oldSock);
-        Log(L"🔌 [Connect] Đã đóng kết nối cũ trước khi mở kết nối mới", 1);
     }
-
     // 2. Tạo socket mới
     Log(L"🔌 [Connect] Bắt đầu kết nối đến " + ip + L":" + std::to_wstring(port), 1);
-
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s == INVALID_SOCKET) {
         Log(L"❌ Không thể tạo socket", 2);
         return false;
     }
-
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-
     char ipUtf8[64] = {};
     WideCharToMultiByte(CP_ACP, 0, ip.c_str(), -1, ipUtf8, sizeof(ipUtf8), NULL, NULL);
-
     if (inet_pton(AF_INET, ipUtf8, &addr.sin_addr) <= 0) {
         Log(L"❌ Địa chỉ IP không hợp lệ", 2);
         closesocket(s);
         return false;
     }
-
     // 3. Đặt non-blocking tạm thời để dùng select()
     u_long mode = 1;
     ioctlsocket(s, FIONBIO, &mode);
-
     int res = connect(s, (sockaddr*)&addr, sizeof(addr));
     if (res == SOCKET_ERROR) {
         int err = WSAGetLastError();
-
         // Cho phép WSAEWOULDBLOCK / WSAEINPROGRESS / WSAEALREADY
         if (err != WSAEWOULDBLOCK && err != WSAEINPROGRESS && err != WSAEALREADY) {
             std::wstringstream ss;
@@ -110,7 +105,6 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
             return false;
         }
     }
-
     // 4. Chờ socket sẵn sàng ghi (kết nối thành công)
     fd_set wset;
     FD_ZERO(&wset);
@@ -126,7 +120,6 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
         closesocket(s);
         return false;
     }
-
     // 5. Kiểm tra lỗi chậm bằng SO_ERROR
     int so_err = 0;
     int optlen = sizeof(so_err);
@@ -139,11 +132,9 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
             return false;
         }
     }
-
     // 6. Trả socket về blocking
     mode = 0;
     ioctlsocket(s, FIONBIO, &mode);
-
     {
         std::lock_guard<std::mutex> lock(mtx_);
         sock_ = s;
@@ -151,34 +142,24 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
         port_ = port;
         connected_ = true;
     }
-
     return true;
 }
 
-// ==========================
-// RciClient.cpp
-// ==========================
-
 bool RciClient::Disconnect() {
     SOCKET localSock = INVALID_SOCKET;
-
     {
         std::lock_guard<std::mutex> lock(mtx_);
-
         if (!connected_ && sock_ == INVALID_SOCKET) {
             return true; // không có gì để ngắt
         }
-
         connected_ = false;
         localSock = sock_;
         sock_ = INVALID_SOCKET;
     }
-
     if (localSock != INVALID_SOCKET) {
         ::shutdown(localSock, SD_BOTH);
         ::closesocket(localSock);
     }
-
     return true;
 }
 
@@ -186,73 +167,52 @@ bool RciClient::IsConnected() const {
     return connected_;
 }
 
-// =========================================================
 // Send / Receive
-// =========================================================
 bool RciClient::SendFrame(const vector<uint8_t>& frame, vector<uint8_t>& reply, int timeoutMs) {
     std::lock_guard<std::mutex> lock(mtx_);
-
-    if (!connected_ || sock_ == INVALID_SOCKET)
-        return false;
-    //Kiểm tra kết nối trước khi gửi
-    if (!IsConnected()) {
-        return false;
-    }
+    if (!connected_ || sock_ == INVALID_SOCKET) return false;
+    if (!IsConnected()) return false;
     // 🟢 TĂNG hiệu suất gửi
     u_long mode = 1; // non-blocking
     ioctlsocket(sock_, FIONBIO, &mode);
-
     if (!SendRaw(frame)) {
         mode = 0; // blocking
         ioctlsocket(sock_, FIONBIO, &mode);
         return false;
     }
-
     bool result = ReceiveRaw(reply, timeoutMs);
-
     mode = 0; // blocking
     ioctlsocket(sock_, FIONBIO, &mode);
-
     return result;
 }
 
 bool RciClient::SendRaw(const vector<uint8_t>& buf) {
     int sent = send(sock_, (const char*)buf.data(), (int)buf.size(), 0);
     if (sent == SOCKET_ERROR) {
-
         int err = WSAGetLastError();
         Log(L"❌ Lỗi gửi dữ liệu (Fatal) - Socket sẽ bị đóng. Err=" + std::to_wstring(err), 2);
-
         connected_ = false;
-
         if (sock_ != INVALID_SOCKET) {
             shutdown(sock_, SD_BOTH);
             closesocket(sock_);
             sock_ = INVALID_SOCKET;
         }
-
         return false;   //báo lên AppController rằng kết nối đã chết
     }
     return true;
 }
 
-bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
-{
+bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs){
     buf.clear();
-
-    if (!connected_ || sock_ == INVALID_SOCKET)
-        return false;
-
+    if (!connected_ || sock_ == INVALID_SOCKET) return false;
     auto start = std::chrono::steady_clock::now();
     vector<uint8_t> acc;
-
     while (true)
     {
         // timeout
         auto now = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > timeoutMs)
             return false;
-
         fd_set r;
         FD_ZERO(&r);
         FD_SET(sock_, &r);
@@ -276,13 +236,9 @@ bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
                 closesocket(sock_);
                 sock_ = INVALID_SOCKET;
             }
-
             return false;
         }
-
-
         acc.insert(acc.end(), tmp, tmp + n);
-
         // Check for ESC ETX -> end of frame
         for (size_t i = 0; i + 1 < acc.size(); ++i)
         {
@@ -295,9 +251,40 @@ bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs)
     }
 }
 
-// =========================================================
+bool RciClient::SendRemoteFieldDataByName(const std::string& fieldName,const std::string& value,int timeoutMs){
+    // Payload format: [numFields=1][fieldName(<=31)+0][value+0]
+    std::vector<uint8_t> payload;
+    payload.push_back(0x01);
+    // fieldName: max 31 bytes + null (manual) :contentReference[oaicite:3]{index=3}
+    AppendNullTerminated(payload, fieldName, 31);
+    // (Giới hạn mềm để tránh gửi quá dài; max thực tế phụ thuộc cấu hình field trên máy)
+    AppendNullTerminated(payload, value, 255);
+    return SendAndWaitAck(0x9E, payload, timeoutMs);
+}
+
+bool RciClient::RequestMessagePrintCount(uint32_t& outCount, std::string& outMsgName,const std::string& msgNameOpt,int timeoutMs){
+    outCount = 0;
+    outMsgName.clear();
+    // payload = 16 bytes name (all 0 => current message) :contentReference[oaicite:11]{index=11}
+    std::vector<uint8_t> payload = BuildMsgName16(msgNameOpt);
+    std::vector<uint8_t> body;
+    if (!SendAndGetBody(0x8D, payload, body, timeoutMs)) return false;
+    // body = [p_status, c_status, cmdid, data...]
+    // data layout (manual): count 4 bytes + msgName 16 bytes :contentReference[oaicite:12]{index=12}
+    const size_t dataOffset = 3;
+    if (body.size() < dataOffset + 4 + 16) return false;
+    const uint8_t* p = body.data() + dataOffset;
+    // LSB first thường dùng trong manual (ví dụ extended mask ghi rõ LSB first) :contentReference[oaicite:13]{index=13}
+    outCount = (uint32_t)p[0] |
+        ((uint32_t)p[1] << 8) |
+        ((uint32_t)p[2] << 16) |
+        ((uint32_t)p[3] << 24);
+    outMsgName.assign((const char*)(p + 4), 16);
+    size_t z = outMsgName.find('\0');
+    if (z != std::string::npos) outMsgName.resize(z);
+    return true;
+}
 // RCI Command Builders
-// =========================================================
 uint8_t RciClient::ComputeChecksum(const vector<uint8_t>& bytes) {
     unsigned int sum = 0;
     for (auto b : bytes) sum += b;
@@ -324,10 +311,8 @@ vector<uint8_t> RciClient::BuildFrame(uint8_t commandId, const vector<uint8_t>& 
             frame.push_back(b);
         }
     }
-
     frame.push_back(ESC);
     frame.push_back(ETX);
-
     if (includeChecksum) {
         vector<uint8_t> csData;
         csData.push_back(useSOH ? SOH : STX);
@@ -335,13 +320,9 @@ vector<uint8_t> RciClient::BuildFrame(uint8_t commandId, const vector<uint8_t>& 
         csData.push_back(ETX);
         frame.push_back(ComputeChecksum(csData));
     }
-
     return frame;
 }
-
-// =========================================================
 // High-level LINX Commands
-// =========================================================
 bool RciClient::RequestStatus() {
     vector<uint8_t> reply;
     auto frame = BuildFrame(0x14);
@@ -364,6 +345,7 @@ bool RciClient::StartJet() {
     return SendCommandNoAck(0x0F);
 
 }
+
 bool RciClient::StopJet() {
     return SendCommandNoAck(0x10);
 }
@@ -375,7 +357,6 @@ bool RciClient::LoadMessage(const string& name, uint16_t printCount) {
     payload.insert(payload.end(), fixed.begin(), fixed.end());
     payload.push_back(printCount & 0xFF);
     payload.push_back((printCount >> 8) & 0xFF);
-
     vector<uint8_t> reply;
     return SendFrame(BuildFrame(0x1E, payload), reply);
 }
@@ -402,31 +383,22 @@ bool RciClient::DownloadMessageData(const vector<uint8_t>& data) {
     vector<uint8_t> reply;
     return SendFrame(BuildFrame(0x19, data), reply);
 }
-
-// =========================================================
 // Extended high-level utilities for AppController
-// =========================================================
 bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payload, int timeoutMs)
 {
     if (timeoutMs <= 0) {
         if (cmdid == 0x0F || cmdid == 0x10) timeoutMs = 60000;
         else timeoutMs = 3000;
     }
-
     std::vector<uint8_t> reply;
-    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs))
-        return false;
-
+    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs)) return false;
     Log(L"Recv: " + ReplyToString(reply), 1);
 
     if (reply.size() < 5) return false;
     const uint8_t ESC = 0x1B, ACK = 0x06, NAK = 0x15;
-
     if (reply[0] != ESC) return false;
-
     if (reply[1] == NAK) return false;
     if (reply[1] != ACK) return false;
-
     // --- parse frame body robustly: find delimiter (STX or SOH) at offset 1 already known? ---
     // find first STX or SOH (reply[1] is ACK, so STX/SOH is not here) 
     // We need to extract the body bytes between delimiter and ESC ETX.
@@ -445,9 +417,7 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
         if (cmdid == 0x12 && recvCmd == 0x12) {
             lastStartPrintAck = false;   // StopPrint thì tắt cờ in
         }
-
     }
-
     // body is bytes between reply[2] ... before esc_etx_pos
     // But need to unescape bytes (ESC prefix)
     std::vector<uint8_t> body;
@@ -467,11 +437,9 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
             body.push_back(reply[i]);
         }
     }
-
     // body layout: [p_status, c_status, cmdid, ...]
     if (body.size() < 3) return false;
     uint8_t recvCmd = body[2];
-
     // verify checksum: compute over (ACK) + body + ETX
     std::vector<uint8_t> csArea;
     csArea.push_back(reply[1]); // ACK or NAK byte
@@ -479,7 +447,6 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
     csArea.insert(csArea.end(), body.begin(), body.end());
     csArea.push_back(0x03); // ETX
     uint8_t expected = ComputeChecksum(csArea);
-
     // determine received checksum (after ESC ETX)
     // position after esc_etx_pos + 2
     size_t after_etx = esc_etx_pos + 2;
@@ -496,7 +463,6 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
         Log(L"⚠ Checksum mismatch on reply", 1);
         return false;
     }
-
    // return recvCmd == cmdid;
     if (cmdid == 0x11 && recvCmd == 0x11) {
         lastStartPrintAck = true;    // StartPrint đã hợp lệ
@@ -507,15 +473,47 @@ bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payloa
     return true;
 }
 
+bool RciClient::SendAndGetBody(uint8_t cmdid,const std::vector<uint8_t>& payload,std::vector<uint8_t>& outBody,int timeoutMs){
+    outBody.clear();
+    std::vector<uint8_t> reply;
+    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs))
+        return false;
+
+    if (reply.size() < 5) return false;
+    const uint8_t ESC = 0x1B, ACK = 0x06, NAK = 0x15;
+    if (reply[0] != ESC) return false;
+    if (reply[1] == NAK) return false;
+    if (reply[1] != ACK) return false;
+    // Find ESC ETX
+    size_t esc_etx_pos = std::string::npos;
+    for (size_t i = 0; i + 1 < reply.size(); ++i) {
+        if (reply[i] == 0x1B && reply[i + 1] == 0x03) { esc_etx_pos = i; break; }
+    }
+    if (esc_etx_pos == std::string::npos) return false;
+    // Unescape body bytes (from index 2 .. before ESC ETX)
+    std::vector<uint8_t> body;
+    for (size_t i = 2; i < esc_etx_pos; ++i) {
+        if (reply[i] == 0x1B) {
+            if (i + 1 >= esc_etx_pos) return false;
+            body.push_back(reply[i + 1]);
+            ++i;
+        }
+        else {
+            body.push_back(reply[i]);
+        }
+    }
+    // body layout: [p_status, c_status, cmdid, ...] :contentReference[oaicite:9]{index=9}
+    if (body.size() < 3) return false;
+    if (body[2] != cmdid) return false;
+    outBody = std::move(body);
+    return true;
+}
 
 PrinterStatus RciClient::RequestStatusEx() {
     std::vector<uint8_t> reply;
     PrinterStatus s;
-
     if (!IsConnected()) return s;
-
-    if (!SendFrame(BuildFrame(0x14), reply, 500))
-        return s;
+    if (!SendFrame(BuildFrame(0x14), reply, 500)) return s;
 
     const uint8_t ESC = 0x1B, ACK = 0x06;
     if (reply.size() >= 13 && reply[0] == ESC && reply[1] == ACK) {
@@ -529,9 +527,7 @@ PrinterStatus RciClient::RequestStatusEx() {
     }
     return s;
 }
-// =========================================================
 // Utility
-// =========================================================
 void RciClient::Log(const std::wstring& msg, int type) {
     if (callback_) callback_(msg, type);
 }

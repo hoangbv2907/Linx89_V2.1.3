@@ -1,43 +1,33 @@
-﻿#include "WindowManager.h"
+﻿
+#include "WindowManager.h"
 #include "Logger.h"
 #include "UIManager.h"
 #include <commctrl.h>
 
-// Constructor
 WindowManager::WindowManager() {}
 
-// Destructor
 WindowManager::~WindowManager() {
-    Logger::GetInstance().Write(L"WindowManager shutdown started");
-
-    // Gọi comprehensive cleanup
     if (appController_) {
+        appController_->ComprehensiveCleanup();
         appController_.reset();
     }
-
     // Cleanup UI components
     if (uiManager_) {
         uiManager_.reset();
     }
-
-    Logger::GetInstance().Write(L"WindowManager shutdown completed");
 }
-
 //vị trí gọi từ main.cpp ngay sau khi main khởi chạy/ chuẩn bị WindowManager trước khi tạo window
 bool WindowManager::Initialize(HINSTANCE hInstance) {
     hInstance_ = hInstance;     //lưu handle instance để dùng cho CreateWindowEx, RegisterClass
-
     // xác định loại common controls cần dùng.
     INITCOMMONCONTROLSEX icex = { sizeof(icex), ICC_INTERNET_CLASSES | ICC_STANDARD_CLASSES };
     //khởi tạo control trên Windows (button, edit box, progress bar…).
     InitCommonControlsEx(&icex);
-
     // tạo UIManager để quản lý toàn bộ control.
     uiManager_ = std::make_unique<UIManager>();
     Logger::GetInstance().Write(L"WindowManager initialized");
     return true;
 }
-
 //vị trí gọi từ main.cpp ngay sau khi Initialize → tạo cửa sổ chính.//đăng ký class của cửa sổ
 bool WindowManager::CreateMainWindow(const std::wstring& title, int width, int height) {
 	WNDCLASS wc = {};                               //khởi tạo struct WNDCLASS
@@ -47,16 +37,10 @@ bool WindowManager::CreateMainWindow(const std::wstring& title, int width, int h
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);    //con trỏ chuột mặc định
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);  //màu nền cửa sổ
 	wc.style = CS_HREDRAW | CS_VREDRAW;             //vẽ lại khi thay đổi kích thước
-
     //đăng ký class, nếu fail → log và return false.
-    if (!RegisterClass(&wc)) {
-        Logger::GetInstance().Write(L"Failed to register window class", 2);
-        return false;
-    }
-
+    if (!RegisterClass(&wc)) return false;
 	//tạo cửa sổ chính với CreateWindowEx//Vị trí gọi: main.cpp → sau đó ShowWindow + UpdateWindow.
     DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-
     RECT rc{ 0, 0, width, height };
     AdjustWindowRectEx(&rc, style, FALSE, 0);
 
@@ -69,26 +53,20 @@ bool WindowManager::CreateMainWindow(const std::wstring& title, int width, int h
         CW_USEDEFAULT, CW_USEDEFAULT, winW, winH,
         nullptr, nullptr, hInstance_, this
     );
-
     if (!hwnd_) {
         Logger::GetInstance().Write(L"Failed to create main window", 2);
         return false;
     }
-
     return true;
 }
-
 // Static WndProc để chuyển message đến instance cụ thể, Windows gọi khi có bất kỳ message nào tới hwnd.
-// vị trí gọi: mọi message từ windows → chuyển đến hàm xử lý tương ứng.
 LRESULT CALLBACK WindowManager::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     WindowManager* pThis = nullptr;
-
     if (msg == WM_NCCREATE) {
 		CREATESTRUCT* cs = reinterpret_cast<CREATESTRUCT*>(lParam);      // Lấy con trỏ instance từ lpCreateParams
 		pThis = reinterpret_cast<WindowManager*>(cs->lpCreateParams);   // trỏ this của WindowManager
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);         // lưu con trỏ this vào dữ liệu cửa sổ     
 		pThis->hwnd_ = hwnd;                                            // lưu HWND vào instance
-
 		// Tạo AppController với HWND của cửa sổ chính
         pThis->appController_ = std::make_unique<AppController>(hwnd);
     }
@@ -99,24 +77,20 @@ LRESULT CALLBACK WindowManager::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam
 	return pThis ? pThis->HandleMessage(msg, wParam, lParam)     // Chuyển message đến instance cụ thể
         : DefWindowProc(hwnd, msg, wParam, lParam);
 }
-
 //vị trí gọi: mọi mesage từ windows → chuyển đến hàm xử lý tương ứng. Xử lý message Windows
 LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CREATE:     //tạo window
         HandleCreate();
         return 0;
-
     case WM_COMMAND: {  //xử lý lệnh từ button, menu, v.v.
         int id = LOWORD(wParam);
         HandleCommand(id);
         return 0;
     }
-
     case WM_DRAWITEM:   //vẽ nút custom (Owner-Draw button)
         HandleDrawItem(reinterpret_cast<LPDRAWITEMSTRUCT>(lParam));
         return TRUE;
-
     case WM_APP_LOG: {  //nhận log message từ AppController thread, update UI.
         LogMessage* logMsg = reinterpret_cast<LogMessage*>(wParam);
         HandleAppLog(logMsg);
@@ -130,58 +104,51 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         catch (const std::exception& e) {
         }
-
         DestroyWindow(hwnd_);
         return 0;
     }
-
     case WM_APP_PRINTER_UPDATE: {   //cập nhật trạng thái máy in trên UI
         PrinterStateMessage* stateMsg = reinterpret_cast<PrinterStateMessage*>(wParam);
         HandlePrinterUpdate(stateMsg);
-
         delete stateMsg;
         return 0;
     }
-
     case WM_APP_CONNECTION_UPDATE: {    //nhận thông tin connected/disconnected
         ConnectionMessage* msg = reinterpret_cast<ConnectionMessage*>(wParam);
-
         HandleConnectionUpdate(msg);   // dùng đúng hàm WindowManager đã viết
-
         delete msg;
         return 0;
     }
-
     case WM_APP_BUTTON_STATE: {     //cập nhật trạng thái button (active, disabled, running…)
         ButtonStateMessage* btnMsg = reinterpret_cast<ButtonStateMessage*>(wParam);
         HandleButtonState(btnMsg);
         delete btnMsg;
         return 0;
     }
-
     case WM_DESTROY:            //xử lý dọn dẹp khi cửa sổ bị đóng
         HandleDestroy();
         return 0;
-
     default:
         return DefWindowProc(hwnd_, msg, wParam, lParam);
     }
 }
-
 //Vị trí gọi: WM_CREATE. tạo control và khởi động thread AppController.
 void WindowManager::HandleCreate() {
-	if (uiManager_) {   //kiểm tra UIManager đã khởi tạo chưa
+	if (uiManager_) {   
+        Logger::GetInstance().Write(L"HandleCreate: Khởi tạo UI");
 		uiManager_->Initialize(hwnd_);  // Khởi tạo UIManager với HWND của cửa sổ chính
 		uiManager_->CreateControls();   // Tạo các control trên cửa sổ
+        Logger::GetInstance().Write(L"HandleCreate: UI controls đã tạo");
         appController_->LoadPrintDataOnStart();
     }
-
 	if (appController_) {   //kiểm tra AppController đã khởi tạo chưa
-
-        appController_->StartWorkerThread(); // Bắt đầu thread làm việc trong AppController
+        Logger::GetInstance().Write(L"HandleCreate: Loading backup data");
+        appController_->LoadPrintDataOnStart();
+		appController_->SavePrintDataOnExit();
+        Logger::GetInstance().Write(L"HandleCreate: Start worker thread");
+        appController_->StartWorkerThread();
     }
 }
-
 //Vị trí gọi: WM_COMMAND. map từng nút click → hàm xử lý riêng.
 void WindowManager::HandleCommand(int id) {
     switch (id) {
@@ -210,124 +177,88 @@ void WindowManager::HandleCommand(int id) {
         break;
     }
 }
-
 //vẽ button custom.
 void WindowManager::HandleDrawItem(LPDRAWITEMSTRUCT dis) {
 	if (uiManager_ && dis) {    // kiểm tra UIManager và DRAWITEMSTRUCT không null
 		uiManager_->HandleOwnerDraw(dis);   // chuyển yêu cầu vẽ đến UIManager
     }
 }
-
 //Vị trí gọi: WM_APP_* messages. Nhận log message từ AppController thread và cập nhật UI log.
 void WindowManager::HandleAppLog(LogMessage* msg) {
 	if (uiManager_ && msg) {    // kiểm tra UIManager và LogMessage không null
 		uiManager_->AddMessage(msg->text);  // thêm message vào log UI
     }
 }
-
 //Vị trí gọi: WM_APP_PRINTER_UPDATE. Cập nhật trạng thái máy in trên UI.
 void WindowManager::HandlePrinterUpdate(PrinterStateMessage* msg) {
     if (uiManager_ && msg) {
 		uiManager_->UpdatePrinterStatus(msg->statusText);   // Cập nhật text trạng thái máy in
-		uiManager_->UpdatePrinterUIState(msg->state);       // Cập nhật trạng thái UI dựa trên trạng thái máy in
+       uiManager_->UpdateJobFields(msg->jobContent, msg->targetCount, msg->printedCount);
+        uiManager_->UpdatePrinterUIState(msg->state);       // Cập nhật trạng thái UI dựa trên trạng thái máy in
         uiManager_->UpdateButtonStates(msg->state);
-        Logger::GetInstance().Write(L"HandlePrinterUpdate: status=" + std::to_wstring((int)msg->state.status));
-
     }
 }
-
 //Vị trí gọi: WM_APP_CONNECTION_UPDATE. Nhận thông tin connected/disconnected.
 void WindowManager::HandleConnectionUpdate(ConnectionMessage* msg) {
     if (uiManager_ && msg) {
-        uiManager_->SetToggleState(msg->connected);     // Cập nhật trạng thái toggle
-        
-        // Thêm message kết nối/ngắt kết nối vào log UI
-        if (msg->connected) { 
+        uiManager_->SetToggleState(msg->connected);     // Cập nhật trạng thái toggle      
+        if (msg->connected) { // Thêm message kết nối/ngắt kết nối vào log UI
            // uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress);
         }
-        else {
-            uiManager_->AddMessage(L"🔌 Đã ngắt kết nối");
-        }
+        uiManager_->AddMessage(L"🔌 Đã ngắt kết nối");
     }
 }
-
 //Vị trí gọi: WM_APP_BUTTON_STATE. Cập nhật trạng thái button (active, disabled, running…)
 void WindowManager::HandleButtonState(ButtonStateMessage* msg) {
     if (uiManager_ && msg) {
 		uiManager_->UpdateButtonStates(msg->state);     // Cập nhật trạng thái button dựa trên trạng thái máy in
     }
 }
-
-//Vị trí gọi: WM_DESTROY. Xử lý dọn dẹp khi cửa sổ bị đóng.
 //đảm bảo cleanup chỉ chạy 1 lần, threads stop trước khi quit.
 void WindowManager::HandleDestroy() {
-    Logger::GetInstance().Write(L"Main window destruction - starting cleanup");
-
     static std::atomic<bool> destroyHandled{ false };
-    if (destroyHandled.exchange(true)) {
-        return;
-    }
-
+    if (destroyHandled.exchange(true)) return;
     // ✅ DỪNG CONTROLLER TRƯỚC KHI POST QUIT
     if (appController_) {
         appController_->StopWorkerThread(1000);
     }
-
     PostQuitMessage(0);
 }
-
-//vị trí gọi: khi toggle kết nối được click.
 //xử lý event người dùng → gọi AppController + update UI.
 void WindowManager::OnToggleClicked() {
-
     if (!appController_ || !uiManager_) return;
-
     bool isToggleCurrentlyOn = uiManager_->IsToggleOn();
-
-    if (!isToggleCurrentlyOn) {
-        // User muốn KẾT NỐI
+    if (!isToggleCurrentlyOn) { // User muốn KẾT NỐI      
         std::wstring ip = uiManager_->GetIPAddress();
         if (!uiManager_->ValidateInput()) {
             uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ");
             return;
         }
-
         appController_->SetLastIp(ip);
-
         appController_->DisableAutoReconnect();
-
-        // Gửi yêu cầu connect
         appController_->Connect(ip);
     }
     else {
-        // User muốn NGẮT KẾT NỐI
         uiManager_->SetToggleState(false);
         uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
         appController_->Disconnect();
     }
 }
-
 //vị trí gọi: khi nút upload được click.
 void WindowManager::OnUploadClicked() {
 	if (!appController_ || !uiManager_) return;  // kiểm tra AppController và UIManager tồn tại
-
 	std::wstring content = uiManager_->GetInputText();  // lấy nội dung từ UI
-    int count = uiManager_->GetCountValue();
-    if (!content.empty()) {     // nếu có nội dung
-        appController_->UploadContent(content, count);
-        uiManager_->AddMessage(L"📤 Đã tải lên nội dung");
-    }
-    else {
+    if (content.empty()) {     
         uiManager_->AddMessage(L"⚠️ Chưa có nội dung để tải lên");
     }
+    std::wstring fieldName = L"RemoteField1";
+    appController_->UploadRemoteFieldData(fieldName, content);
+    uiManager_->AddMessage(L"📤 Đang tải lên Remote Field: " + fieldName);
 }
-
 //vị trí gọi: khi nút start được click.
 void WindowManager::OnStartClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
-
     PrinterState cur = appController_->GetCurrentState();
-
     if (cur.jetOn) {
         uiManager_->AddMessage(L"⚠️ Jet đã ON — không gửi lệnh khởi động.");
         return;
@@ -342,20 +273,15 @@ void WindowManager::OnStartClicked() {
 
 void WindowManager::OnPrintClicked() {
     if (!appController_ || !uiManager_) return; // kiểm tra AppController tồn tại
-
     // Lấy trạng thái hiện tại từ AppController (hoặc PrinterModel)
     PrinterState cur = appController_->GetCurrentState();
-
     if (cur.status == PrinterStateType::Printing || cur.printing) {
-        // Nếu đang in -> gửi lệnh StopPrint (tạm dừng)
         appController_->StopPrinting();
         uiManager_->AddMessage(L"⏸️ Yêu cầu tạm dừng in được gửi...");
     }
-    else {
-        // Nếu không đang in -> bắt đầu in
+    else {// Nếu không đang in -> bắt đầu in
         std::wstring content = uiManager_->GetInputText();
         int count = uiManager_->GetCountValue();
-
         if (!content.empty() && count > 0) {
             appController_->StartPrinting(content, count);
             uiManager_->AddMessage(L"🖨️ Đã gửi lệnh bắt đầu in...");
@@ -365,13 +291,10 @@ void WindowManager::OnPrintClicked() {
         }
     }
 }
-
 //vị trí gọi: khi nút stop được click.
 void WindowManager::OnStopClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
-
     PrinterState cur = appController_->GetCurrentState();
-
     if (!cur.jetOn) {
         uiManager_->AddMessage(L"⚠️ Jet đã off — không gửi lệnh dừng");
         return;
@@ -383,7 +306,6 @@ void WindowManager::OnStopClicked() {
 	appController_->StopJet(); //gọi StopPrinting trong AppController
     uiManager_->AddMessage(L"⏹️ Dừng jet...");
 }
-
 //vị trí gọi: khi nút clear được click.
 void WindowManager::OnClearClicked() {
 	if (uiManager_) {   // kiểm tra UIManager tồn tại
@@ -391,14 +313,13 @@ void WindowManager::OnClearClicked() {
         uiManager_->AddMessage(L"Đã xóa nhật ký");
     }
 }
-
 //vị trí gọi: khi nút set được click.
 void WindowManager::OnSetClicked() {
 	if (!appController_ || !uiManager_) return; // kiểm tra AppController và UIManager tồn tại
-
 	int count = uiManager_->GetCountValue();    // lấy số lượng in từ UI
     if (count > 0) {
 		appController_->SetCount(count); // gọi SetCount trong AppController
+        appController_->SavePrintDataOnExit();
     }
     else {
         uiManager_->AddMessage(L"❌ Số lượng phải lớn hơn 0");

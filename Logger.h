@@ -15,20 +15,17 @@ public:
 
     void Write(const std::wstring& message, int level = 0) {
         std::lock_guard<std::mutex> lock(logMutex_);
-
         std::wstring levelStr;
+
         switch (level) {
         case 1: levelStr = L"[WARNING] "; break;
         case 2: levelStr = L"[ERROR] "; break;
         case 3: levelStr = L"[DEBUG] "; break;
         default: levelStr = L"[INFO] "; break;
         }
-
         std::wstring logEntry = GetCurrentTime() + L" " + levelStr + message;
-
         // Output to debugger
         OutputDebugStringW((logEntry + L"\n").c_str());
-
         // Write to file if enabled
         if (logFile_.is_open()) {
             logFile_ << logEntry << std::endl;
@@ -49,7 +46,6 @@ public:
 
 private:
     Logger() {
-        // Default log file
         SetLogFile(L"linx_controller.log");
         Write(L"Logger initialized");
     }

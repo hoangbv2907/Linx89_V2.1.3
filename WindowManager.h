@@ -13,14 +13,11 @@ class WindowManager {  //Khai báo lớp WindowManager
 public:
     WindowManager();  //Constructor
 	~WindowManager(); //Destructor
-
 	bool Initialize(HINSTANCE hInstance); //được gọi từ main.cpp Khởi tạo WindowManager với instance handle
 	bool CreateMainWindow(const std::wstring& title, int width, int height);    //Tạo cửa sổ chính với tiêu đề, chiều rộng và chiều cao
 	HWND GetHwnd() const { return hwnd_; }  //Getter lấy HWND của cửa sổ chính Để main.cpp gọi ShowWindow và UpdateWindow.
-
     // HÀM CHÍNH của WindowManager/Message handling
     LRESULT HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam);
-
     // Getters
     UIManager* GetUIManager() { return uiManager_.get(); }
     AppController* GetAppController() { return appController_.get(); }
@@ -28,7 +25,6 @@ public:
 private:
 	//WndProc tĩnh để đăng ký với hệ thống cửa sổ
     static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
     // Message handlers
 	void HandleCreate();                                        //Khởi tạo UIManager, AppController, Tạo các button, listbox, v.v.
 	void HandleCommand(int id);                                 // Xử lý các lệnh từ button, menu, v.v.
@@ -46,7 +42,6 @@ private:
     void OnStopClicked();
     void OnClearClicked();
     void OnSetClicked();
-
 	HINSTANCE hInstance_ = nullptr;     //Instance handle của ứng dụng
     HWND hwnd_ = nullptr;               //Window chính của chương trình.
     std::unique_ptr<UIManager> uiManager_;  //Quản lý UI (nút, màu, vẽ icon…) Tạo/huỷ UI theo vòng đời window.

@@ -15,8 +15,7 @@ public:
         currentState_.targetCount = 0;
     }
 
-    const std::wstring& GetCurrentJobContent() const
-    {
+    const std::wstring& GetCurrentJobContent() const{
         return currentJobContent_;
     }
 	// Đặt trạng thái máy in
@@ -24,26 +23,22 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         currentState_ = state;
     }
-
 	// Lấy trạng thái máy in hiện tại
     PrinterState GetState() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return currentState_;
     }
-    
 	// Đặt văn bản trạng thái máy in
     void SetStatusText(const std::wstring& status) {
         std::lock_guard<std::mutex> lock(mutex_);
         statusText_ = status;
         currentState_.statusText = status; 
     }
-
 	// Lấy văn bản trạng thái máy in
     std::wstring GetStatusText() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return statusText_;
     }
-
 	// Đặt công việc in hiện tại
     void SetCurrentJob(const std::wstring& jobId, int totalCount) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -54,25 +49,22 @@ public:
         currentState_.targetCount = totalCount;
         currentState_.printedCount = 0;
     }
-
 	// Cập nhật tiến trình công việc in
     void UpdateJobProgress(int currentCount) {
         std::lock_guard<std::mutex> lock(mutex_);
         jobCurrent_ = currentCount;
         currentState_.printedCount = currentCount;
     }
-
 	// Xóa công việc in hiện tại
     void ClearCurrentJob() {
         std::lock_guard<std::mutex> lock(mutex_);
-        currentJobId_.clear();
+        currentJobContent_.clear();      // ✅ đúng biến đang dùng
         jobTotal_ = 0;
         jobCurrent_ = 0;
         currentState_.jobId.clear();
         currentState_.targetCount = 0;
         currentState_.printedCount = 0;
     }
-
 	// Đặt lỗi cuối cùng
     void SetLastError(const std::wstring& error) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -80,38 +72,32 @@ public:
         currentState_.errorMessage = error;
         currentState_.status = PrinterStateType::Error;
     }
-
 	// Lấy lỗi cuối cùng
     std::wstring GetLastError() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return lastError_;
     }
-
 	// Đặt thông tin kết nối máy in
     void SetConnectionInfo(const std::wstring& ip, int port) {
         std::lock_guard<std::mutex> lock(mutex_);
         ipAddress_ = ip;
         port_ = port;
     }
-
 	// Lấy địa chỉ IP máy in
     std::wstring GetIpAddress() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return ipAddress_;
     }
-
 	// Lấy cổng máy in
     int GetPort() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return port_;
     }
-
 	// Đặt công việc in đang chờ
     bool HasPendingPrintJob() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return hasPendingJob_;
     }
-
 	// Đặt công việc in đang chờ
     void ClearPendingJob() {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -123,20 +109,17 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         return jobCurrent_;
     }
-
 	// Lấy tổng số lượng mục tiêu in
     int GetTargetCount() const {
         std::lock_guard<std::mutex> lock(mutex_);
         return jobTotal_;
     }
-
     // Thêm method để cập nhật trạng thái in
     void SetPrintingState(bool isPrinting) {
         std::lock_guard<std::mutex> lock(mutex_);
         currentState_.printing = isPrinting;
         currentState_.status = isPrinting ? PrinterStateType::Printing : PrinterStateType::Idle;
     }
-
     // Thêm method để cập nhật trạng thái jet
     void SetJetState(bool jetOn) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -151,7 +134,6 @@ private:
     std::wstring printContent_;
     bool hasPendingJob_ = false;
 
-    std::wstring currentJobId_;
     int jobTotal_ = 0;
     int jobCurrent_ = 0;
     std::wstring currentJobContent_;

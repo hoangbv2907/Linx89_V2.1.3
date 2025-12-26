@@ -27,7 +27,6 @@ public:
 
 private:
     FontManager() = default;
-
     // Custom deleter cho HFONT
     struct FontDeleter {
         void operator()(HFONT font) const {
@@ -42,21 +41,18 @@ private:
         int defaultSize = -MulDiv(9, GetDeviceCaps(hdc, LOGPIXELSY), 72);
         int toggleSize = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
         ReleaseDC(NULL, hdc);
-
         // ✅ Tạo unique_ptr với custom deleter
         hDefaultFont_ = UniqueHFONT(CreateFontW(defaultSize, 0, 0, 0, FW_NORMAL,
             FALSE, FALSE, FALSE, DEFAULT_CHARSET,
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
             DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
             L"Segoe UI"));
-
         hToggleFont_ = UniqueHFONT(CreateFontW(toggleSize, 0, 0, 0, FW_BOLD,
             FALSE, FALSE, FALSE, DEFAULT_CHARSET,
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
             DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
             L"Segoe UI"));
     }
-
     // ✅ Member variables là unique_ptr
     UniqueHFONT hDefaultFont_;
     UniqueHFONT hToggleFont_;
