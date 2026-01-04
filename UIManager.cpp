@@ -70,9 +70,9 @@ void UIManager::CreateControls() {
     UpdatePrinterUIState(initialState);
 }
 // Thêm một thông điệp vào nhật ký hiển thị trong giao diện người dùng
-void UIManager::AddMessage(const std::wstring& text) {
-	if (messageLogger_) {   // Kiểm tra con trỏ thông điệp nhật ký không rỗng trước khi sử dụng
-		messageLogger_->AddMessage(text);   // Thêm thông điệp vào nhật ký
+void UIManager::AddMessage(const std::wstring& text, int level) {
+    if (messageLogger_) {
+        messageLogger_->AddMessage(text, level);
     }
 }
 // Xóa tất cả thông điệp khỏi nhật ký hiển thị trong giao diện người dùng
@@ -217,6 +217,7 @@ void UIManager::UpdateButtonStateForPrinterState(PrinterState state){
         stopJet = true;
         print = true;
         stopPrint = true;
+        setCount = false;
         btnPrint_.SetCaption(L"TẠM DỪNG IN");
         btnPrint_.SetBaseColor(RGB(255, 160, 0));
         break;

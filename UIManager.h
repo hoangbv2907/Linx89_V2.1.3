@@ -19,7 +19,7 @@ public:
     bool Initialize(HWND hParent);  //Lưu lại handle của window chính (hParent_), Tạo logger & toggle switch, Chuẩn bị cho việc tạo UI
 	void CreateControls();  //Tạo các control trên giao diện
     // Message handling
-    void AddMessage(const std::wstring& text); //Thêm 1 dòng text vào MessageLogger
+    void AddMessage(const std::wstring& text, int level);
 	void ClearMessages();   //Xóa hết các dòng trong MessageLogger
     void UpdatePrinterStatus(const std::wstring& text); //Hiển thị trạng thái máy in lên hPrinterState_
     void UpdatePrinterUIState(PrinterState state);  //Thay đổi giao diện tùy theo trạng thái máy in

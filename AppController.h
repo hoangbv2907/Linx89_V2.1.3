@@ -1,6 +1,5 @@
 ﻿
 #pragma once
-
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -55,6 +54,7 @@ public:
 	void SavePrintDataOnExit();
 	void LoadPrintDataOnStart();
 	void SendStateUpdate();
+	
 private:
 	ResourceTracker resourceTracker;               // Quản lý cleanup resources
 	HWND mainWindow_;                              // Handle của cửa sổ chính

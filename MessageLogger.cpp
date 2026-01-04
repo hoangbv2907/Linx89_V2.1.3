@@ -1,4 +1,5 @@
 ﻿#include "MessageLogger.h"
+#include "MessageDef.h"
 
 MessageLogger::MessageLogger() {}
 
@@ -25,13 +26,39 @@ HWND MessageLogger::Create(HWND hParent, int x, int y, int width, int height) {
     return hwnd_;
 }
 // Thêm tin nhắn vào RichEdit control
-void MessageLogger::AddMessage(const std::wstring& text) {
-	if (!hwnd_) return; // Kiểm tra nếu hwnd_ hợp lệ
-	int len = GetWindowTextLengthW(hwnd_);  // Lấy độ dài hiện tại của văn bản
-	SendMessage(hwnd_, EM_SETSEL, len, len);    // Đặt con trỏ vào cuối văn bản
-	SendMessage(hwnd_, EM_REPLACESEL, FALSE, (LPARAM)(text + L"\r\n").c_str()); // Thêm văn bản mới với xuống dòng
-	SendMessage(hwnd_, WM_VSCROLL, SB_BOTTOM, 0);   // Tự động cuộn xuống cuối
-	UpdateWindow(hwnd_);    // Cập nhật hiển thị ngay lập tức
+
+void MessageLogger::AddMessage(const std::wstring& text, int level) {
+    if (!hwnd_) return;
+
+    int len = GetWindowTextLengthW(hwnd_);
+    SendMessage(hwnd_, EM_SETSEL, len, len);
+
+    CHARFORMAT2 cf{};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_COLOR;
+
+    switch (level) {
+    case 1: // WARNING
+        cf.crTextColor = RGB(255, 140, 0);
+        break;
+    case 2: // ERROR
+        cf.crTextColor = RGB(220, 20, 60);
+        break;
+    case 3: // DEBUG
+        cf.crTextColor = RGB(0, 120, 215);
+        break;
+    case 4:
+        cf.crTextColor = RGB(0, 255, 0);
+        break;
+    default: // INFO
+        cf.crTextColor = RGB(30, 30, 30);
+        break;
+    }
+
+    SendMessage(hwnd_, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+    SendMessage(hwnd_, EM_REPLACESEL, FALSE, (LPARAM)(text + L"\r\n").c_str());
+    SendMessage(hwnd_, WM_VSCROLL, SB_BOTTOM, 0);
+    UpdateWindow(hwnd_);
 }
 // Xóa tất cả tin nhắn trong RichEdit control
 void MessageLogger::Clear() {

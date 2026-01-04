@@ -91,10 +91,11 @@ LRESULT WindowManager::HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_DRAWITEM:   //vẽ nút custom (Owner-Draw button)
         HandleDrawItem(reinterpret_cast<LPDRAWITEMSTRUCT>(lParam));
         return TRUE;
+
     case WM_APP_LOG: {  //nhận log message từ AppController thread, update UI.
-        LogMessage* logMsg = reinterpret_cast<LogMessage*>(wParam);
-        HandleAppLog(logMsg);
-        delete logMsg;
+        auto* log = (LogMessage*)wParam;
+        if (uiManager_) uiManager_->AddMessage(log->text, log->level);
+        delete log;
         return 0;
     }
     case WM_CLOSE:
@@ -186,7 +187,7 @@ void WindowManager::HandleDrawItem(LPDRAWITEMSTRUCT dis) {
 //Vị trí gọi: WM_APP_* messages. Nhận log message từ AppController thread và cập nhật UI log.
 void WindowManager::HandleAppLog(LogMessage* msg) {
 	if (uiManager_ && msg) {    // kiểm tra UIManager và LogMessage không null
-		uiManager_->AddMessage(msg->text);  // thêm message vào log UI
+		uiManager_->AddMessage(msg->text, msg->level);  // thêm message vào log UI
     }
 }
 //Vị trí gọi: WM_APP_PRINTER_UPDATE. Cập nhật trạng thái máy in trên UI.
@@ -203,9 +204,10 @@ void WindowManager::HandleConnectionUpdate(ConnectionMessage* msg) {
     if (uiManager_ && msg) {
         uiManager_->SetToggleState(msg->connected);     // Cập nhật trạng thái toggle      
         if (msg->connected) { // Thêm message kết nối/ngắt kết nối vào log UI
-           // uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress);
+           uiManager_->AddMessage(L"✅ Đã kết nối đến " + msg->ipAddress, 4);
         }
-        uiManager_->AddMessage(L"🔌 Đã ngắt kết nối");
+        else 
+            uiManager_->AddMessage(L"X Đã ngắt kết nối với " + msg->ipAddress, 2);
     }
 }
 //Vị trí gọi: WM_APP_BUTTON_STATE. Cập nhật trạng thái button (active, disabled, running…)
@@ -231,7 +233,7 @@ void WindowManager::OnToggleClicked() {
     if (!isToggleCurrentlyOn) { // User muốn KẾT NỐI      
         std::wstring ip = uiManager_->GetIPAddress();
         if (!uiManager_->ValidateInput()) {
-            uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ");
+            uiManager_->AddMessage(L"❌ Địa chỉ IP không hợp lệ",2);
             return;
         }
         appController_->SetLastIp(ip);
@@ -240,7 +242,6 @@ void WindowManager::OnToggleClicked() {
     }
     else {
         uiManager_->SetToggleState(false);
-        uiManager_->AddMessage(L"🔌 Đang ngắt kết nối...");
         appController_->Disconnect();
     }
 }
@@ -249,26 +250,26 @@ void WindowManager::OnUploadClicked() {
 	if (!appController_ || !uiManager_) return;  // kiểm tra AppController và UIManager tồn tại
 	std::wstring content = uiManager_->GetInputText();  // lấy nội dung từ UI
     if (content.empty()) {     
-        uiManager_->AddMessage(L"⚠️ Chưa có nội dung để tải lên");
+        uiManager_->AddMessage(L"⚠️ Chưa có nội dung để tải lên",1);
     }
     std::wstring fieldName = L"RemoteField1";
     appController_->UploadRemoteFieldData(fieldName, content);
-    uiManager_->AddMessage(L"📤 Đang tải lên Remote Field: " + fieldName);
+    uiManager_->AddMessage(L"📤 Đang tải lên Remote Field: " + fieldName, 3);
 }
 //vị trí gọi: khi nút start được click.
 void WindowManager::OnStartClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
     PrinterState cur = appController_->GetCurrentState();
     if (cur.jetOn) {
-        uiManager_->AddMessage(L"⚠️ Jet đã ON — không gửi lệnh khởi động.");
+        uiManager_->AddMessage(L"⚠️ Jet đã ON — không gửi lệnh khởi động.",3);
         return;
     }
     if (cur.status == PrinterStateType::StartingJet ) {
-        uiManager_->AddMessage(L"⚠️ Đang chờ Jet khởi động — vui lòng đợi.");
+        uiManager_->AddMessage(L"⚠️ Đang chờ Jet khởi động — vui lòng đợi.",3);
         return;
     }
 	appController_->StartJet(); //gọi StartJet trong AppController
-    uiManager_->AddMessage(L"🚀 Khởi động jet...");
+    uiManager_->AddMessage(L"🚀 Khởi động jet...",3);
 }
 
 void WindowManager::OnPrintClicked() {
@@ -277,17 +278,17 @@ void WindowManager::OnPrintClicked() {
     PrinterState cur = appController_->GetCurrentState();
     if (cur.status == PrinterStateType::Printing || cur.printing) {
         appController_->StopPrinting();
-        uiManager_->AddMessage(L"⏸️ Yêu cầu tạm dừng in được gửi...");
+        uiManager_->AddMessage(L"⏸️ Yêu cầu tạm dừng in được gửi...",3);
     }
     else {// Nếu không đang in -> bắt đầu in
         std::wstring content = uiManager_->GetInputText();
         int count = uiManager_->GetCountValue();
         if (!content.empty() && count > 0) {
             appController_->StartPrinting(content, count);
-            uiManager_->AddMessage(L"🖨️ Đã gửi lệnh bắt đầu in...");
+            uiManager_->AddMessage(L"🖨️ Đã gửi lệnh bắt đầu in...",3);
         }
         else {
-            uiManager_->AddMessage(L"⚠️ Chưa có nội dung hoặc số lượng không hợp lệ");
+            uiManager_->AddMessage(L"⚠️ Chưa có nội dung hoặc số lượng không hợp lệ",3);
         }
     }
 }
@@ -296,21 +297,21 @@ void WindowManager::OnStopClicked() {
 	if (!appController_) return;    // kiểm tra AppController tồn tại
     PrinterState cur = appController_->GetCurrentState();
     if (!cur.jetOn) {
-        uiManager_->AddMessage(L"⚠️ Jet đã off — không gửi lệnh dừng");
+        uiManager_->AddMessage(L"⚠️ Jet đã off — không gửi lệnh dừng",3);
         return;
     }
     if (cur.status == PrinterStateType::StopingJet) {
-        uiManager_->AddMessage(L"⚠️ Đang chờ dừng Jet  — vui lòng đợi.");
+        uiManager_->AddMessage(L"⚠️ Đang chờ dừng Jet  — vui lòng đợi.",3);
         return;
     }
 	appController_->StopJet(); //gọi StopPrinting trong AppController
-    uiManager_->AddMessage(L"⏹️ Dừng jet...");
+    uiManager_->AddMessage(L"⏹️ Dừng jet...",3);
 }
 //vị trí gọi: khi nút clear được click.
 void WindowManager::OnClearClicked() {
 	if (uiManager_) {   // kiểm tra UIManager tồn tại
 		uiManager_->ClearMessages();    // xóa tất cả message trong log UI
-        uiManager_->AddMessage(L"Đã xóa nhật ký");
+        uiManager_->AddMessage(L"Đã xóa nhật ký",3);
     }
 }
 //vị trí gọi: khi nút set được click.
@@ -322,6 +323,6 @@ void WindowManager::OnSetClicked() {
         appController_->SavePrintDataOnExit();
     }
     else {
-        uiManager_->AddMessage(L"❌ Số lượng phải lớn hơn 0");
+        uiManager_->AddMessage(L"❌ Số lượng phải lớn hơn 0",1);
     }
 }

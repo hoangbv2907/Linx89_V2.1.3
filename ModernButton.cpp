@@ -187,4 +187,3 @@ void ModernButton::SetCaption(const std::wstring& text){
     caption = text;
     SetWindowTextW(hButton, text.c_str());
 }
-

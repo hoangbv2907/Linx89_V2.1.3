@@ -11,13 +11,13 @@
 using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
 
-static void AppendNullTerminated(std::vector<uint8_t>& out, const std::string& s, size_t maxBytesNoNull){
+static void AppendNullTerminated(std::vector<uint8_t>& out, const std::string& s, size_t maxBytesNoNull) {
     size_t n = min(s.size(), maxBytesNoNull);
     out.insert(out.end(), s.begin(), s.begin() + n);
     out.push_back(0x00); // null terminator
 }
 
-static std::vector<uint8_t> BuildMsgName16(const std::string& nameOpt){
+static std::vector<uint8_t> BuildMsgName16(const std::string& nameOpt) {
     std::vector<uint8_t> buf(16, 0x00);
     if (!nameOpt.empty()) {
         size_t n = std::min<size_t>(15, nameOpt.size());
@@ -25,6 +25,132 @@ static std::vector<uint8_t> BuildMsgName16(const std::string& nameOpt){
         buf[n] = 0x00;
     }
     return buf;
+}
+
+static std::wstring HexDump(const std::vector<uint8_t>& v, size_t max = 128) {
+    std::wstringstream ws;
+    ws << std::hex << std::setfill(L'0');
+    size_t n = min(v.size(), max);
+    for (size_t i = 0; i < n; ++i) ws << std::setw(2) << (int)v[i] << L' ';
+    if (v.size() > n) ws << L"...";
+    return ws.str();
+}
+
+static void UnescapeBodyBytes(const std::vector<uint8_t>& in, std::vector<uint8_t>& out) {
+    out.clear();
+    out.reserve(in.size());
+
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i] == 0x1B) {
+            if (i + 1 >= in.size()) break; // malformed
+            uint8_t b = in[i + 1];
+
+            // ✅ Chỉ unescape các byte mà sender có quyền escape
+            if (b < 0x20 || b == 0x1B) {
+                out.push_back(b);
+                ++i;
+                continue;
+            }
+
+            // Nếu gặp ESC + byte không hợp lệ theo rule -> coi như dữ liệu thô
+            // (hoặc bạn có thể return lỗi)
+            out.push_back(0x1B);
+            continue;
+        }
+        out.push_back(in[i]);
+    }
+}
+
+static inline uint32_t ReadU32_LSB_First(const uint8_t* p) {
+    return (uint32_t)p[0]
+        | ((uint32_t)p[1] << 8)
+        | ((uint32_t)p[2] << 16)
+        | ((uint32_t)p[3] << 24);
+}
+
+struct ParsedReply {
+    bool ok = false;
+    bool ack = false; // true=ACK, false=NAK
+    uint8_t p_status = 0, c_status = 0, cmdid = 0;
+    std::vector<uint8_t> data;
+};
+
+static bool TryGetCmdIdFromFrame(const std::vector<uint8_t>& frame, uint8_t& outCmd) {
+    if (frame.size() < 3) return false;
+    if (frame[0] != 0x1B) return false;
+    if (frame[1] != 0x01 && frame[1] != 0x02) return false; // SOH/STX
+    if (frame[2] == 0x1B) { // double ESC -> cmdid = 0x1B
+        outCmd = 0x1B;
+        return true;
+    }
+    outCmd = frame[2];
+    return true;
+}
+
+void RciClient::MarkDisconnected_NoThrow() {
+    SOCKET s = INVALID_SOCKET;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        connected_.store(false, std::memory_order_release);
+        s = sock_;
+        sock_ = INVALID_SOCKET;
+
+        // Khi đã coi là disconnect, pending cũng không còn ý nghĩa
+        rxPending_.clear();
+    }
+    if (s != INVALID_SOCKET) {
+        ::shutdown(s, SD_BOTH);
+        ::closesocket(s);
+    }
+}
+
+// Trả về body đã UNESCAPE, verify checksum (theo đúng frame reply ESC ACK ... ESC ETX chk)
+ParsedReply ParseReplyAndVerify(const std::vector<uint8_t>& reply, uint8_t(*ComputeChecksumFn)(const std::vector<uint8_t>&)) {
+    ParsedReply pr;
+    if (reply.size() < 6) return pr;
+    if (reply[0] != 0x1B) return pr;
+    if (reply[1] != 0x06 && reply[1] != 0x15) return pr;
+
+    // Find ESC ETX
+    size_t esc_etx = std::string::npos;
+    for (size_t i = 0; i + 1 < reply.size(); ++i) {
+        if (reply[i] == 0x1B && reply[i + 1] == 0x03) { esc_etx = i; break; }
+    }
+    if (esc_etx == std::string::npos) return pr;
+
+    // Determine received checksum byte (after ESC ETX)
+    size_t after = esc_etx + 2;
+    if (after >= reply.size()) return pr;
+    uint8_t recvChk = 0;
+    if (reply[after] == 0x1B) {
+        if (after + 1 >= reply.size()) return pr;
+        recvChk = reply[after + 1];
+    }
+    else {
+        recvChk = reply[after];
+    }
+
+    // Unescape body bytes between index 2 .. esc_etx-1
+    std::vector<uint8_t> escBody(reply.begin() + 2, reply.begin() + esc_etx);
+    std::vector<uint8_t> body;
+    UnescapeBodyBytes(escBody, body);
+    if (body.size() < 3) return pr;
+
+    // verify checksum over: (ACK/NAK byte) + body(unescaped) + ETX(0x03)
+    std::vector<uint8_t> csArea;
+    csArea.push_back(reply[1]);
+    csArea.insert(csArea.end(), body.begin(), body.end());
+    csArea.push_back(0x03);
+    uint8_t expected = ComputeChecksumFn(csArea);
+    if (expected != recvChk) return pr;
+
+    pr.ok = true;
+    pr.ack = (reply[1] == 0x06);
+    pr.p_status = body[0];
+    pr.c_status = body[1];
+    pr.cmdid = body[2];
+    pr.data.assign(body.begin() + 3, body.end());
+    return pr;
 }
 
 RciClient::RciClient() : sock_(INVALID_SOCKET), connected_(false), port_(0) {
@@ -64,7 +190,7 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
     {
         std::lock_guard<std::mutex> lock(mtx_);
         if (connected_ || sock_ != INVALID_SOCKET) {
-            connected_ = false;// đánh dấu disconnect
+            connected_.store(false, std::memory_order_release);
             oldSock = sock_;
             sock_ = INVALID_SOCKET;
         }
@@ -135,13 +261,30 @@ bool RciClient::Connect(const std::wstring& ip, unsigned short port, int timeout
     // 6. Trả socket về blocking
     mode = 0;
     ioctlsocket(s, FIONBIO, &mode);
+
+    // (6.1) Apply socket options BEFORE publish
+    DWORD sndTo = 2000;
+    DWORD rcvTo = 2000;
+    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&sndTo, sizeof(sndTo));
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&rcvTo, sizeof(rcvTo));
+
+    // 6.2 TCP_NODELAY (phần 6 bên dưới)
+    BOOL nodelay = TRUE;
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
+
+    // 6.3 KEEPALIVE (tuỳ chọn)
+    BOOL ka = TRUE;
+    setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char*)&ka, sizeof(ka));
+
+    // publish connection
     {
         std::lock_guard<std::mutex> lock(mtx_);
         sock_ = s;
         host_ = ip;
         port_ = port;
-        connected_ = true;
+        connected_.store(true, std::memory_order_release);
     }
+
     return true;
 }
 
@@ -149,12 +292,14 @@ bool RciClient::Disconnect() {
     SOCKET localSock = INVALID_SOCKET;
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        if (!connected_ && sock_ == INVALID_SOCKET) {
-            return true; // không có gì để ngắt
+        if (!connected_.load(std::memory_order_acquire) && sock_ == INVALID_SOCKET) {
+            return true;
         }
-        connected_ = false;
+        connected_.store(false, std::memory_order_release);
         localSock = sock_;
         sock_ = INVALID_SOCKET;
+
+        rxPending_.clear(); // ✅ clear pending
     }
     if (localSock != INVALID_SOCKET) {
         ::shutdown(localSock, SD_BOTH);
@@ -164,94 +309,143 @@ bool RciClient::Disconnect() {
 }
 
 bool RciClient::IsConnected() const {
-    return connected_;
+    return connected_.load(std::memory_order_acquire);
 }
-
 // Send / Receive
-bool RciClient::SendFrame(const vector<uint8_t>& frame, vector<uint8_t>& reply, int timeoutMs) {
-    std::lock_guard<std::mutex> lock(mtx_);
-    if (!connected_ || sock_ == INVALID_SOCKET) return false;
-    if (!IsConnected()) return false;
-    // 🟢 TĂNG hiệu suất gửi
-    u_long mode = 1; // non-blocking
-    ioctlsocket(sock_, FIONBIO, &mode);
-    if (!SendRaw(frame)) {
-        mode = 0; // blocking
-        ioctlsocket(sock_, FIONBIO, &mode);
-        return false;
-    }
-    bool result = ReceiveRaw(reply, timeoutMs);
-    mode = 0; // blocking
-    ioctlsocket(sock_, FIONBIO, &mode);
-    return result;
-}
+bool RciClient::SendFrame(const std::vector<uint8_t>& frame, std::vector<uint8_t>& reply, int timeoutMs)
+{
+    SOCKET s = INVALID_SOCKET;
 
-bool RciClient::SendRaw(const vector<uint8_t>& buf) {
-    int sent = send(sock_, (const char*)buf.data(), (int)buf.size(), 0);
-    if (sent == SOCKET_ERROR) {
-        int err = WSAGetLastError();
-        Log(L"❌ Lỗi gửi dữ liệu (Fatal) - Socket sẽ bị đóng. Err=" + std::to_wstring(err), 2);
-        connected_ = false;
-        if (sock_ != INVALID_SOCKET) {
-            shutdown(sock_, SD_BOTH);
-            closesocket(sock_);
-            sock_ = INVALID_SOCKET;
-        }
-        return false;   //báo lên AppController rằng kết nối đã chết
-    }
-    return true;
-}
-
-bool RciClient::ReceiveRaw(vector<uint8_t>& buf, int timeoutMs){
-    buf.clear();
-    if (!connected_ || sock_ == INVALID_SOCKET) return false;
-    auto start = std::chrono::steady_clock::now();
-    vector<uint8_t> acc;
-    while (true)
+    // 1) Snapshot socket + take pending
+    std::vector<uint8_t> acc;
     {
-        // timeout
-        auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > timeoutMs)
-            return false;
-        fd_set r;
-        FD_ZERO(&r);
-        FD_SET(sock_, &r);
-        timeval tv{ 0, 100000 }; // 100ms
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (!connected_.load(std::memory_order_acquire) || sock_ == INVALID_SOCKET) return false;
+        s = sock_;
+        acc = rxPending_;
+        rxPending_.clear();
+    }
+    acc.reserve(std::max<size_t>(256, acc.size() + 256));
+    reply.clear();
 
-        int s = select(0, &r, NULL, NULL, &tv);
-        if (s == SOCKET_ERROR)
-        {
-            connected_ = false;
+    // 2) Apply timeouts (blocking)
+    if (timeoutMs > 0) {
+        DWORD rcvTo = (DWORD)timeoutMs;
+        DWORD sndTo = (DWORD)min(timeoutMs, 2000);
+        setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&rcvTo, sizeof(rcvTo));
+        setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&sndTo, sizeof(sndTo));
+    }
+
+    uint8_t cmdid = 0xFF;
+    TryGetCmdIdFromFrame(frame, cmdid);
+    const bool isStatusCmd = (cmdid == 0x14);
+
+    // ✅ Chặn log hexdump cho 0x14 để đỡ loạn
+    if (!isStatusCmd) {
+        Log(L"➡️ TX: " + HexDump(frame), 1);
+    }
+    // 3) Send all
+    size_t total = 0;
+    while (total < frame.size()) {
+        int n = send(s, (const char*)frame.data() + total, (int)(frame.size() - total), 0);
+        if (n == SOCKET_ERROR) {
+            int err = WSAGetLastError();
+            Log(L"❌ send() failed Err=" + std::to_wstring(err), 2);
+            MarkDisconnected_NoThrow();
             return false;
         }
-        if (s == 0) continue; // no data yet
+        total += (size_t)n;
+    }
 
-        char tmp[1024];
-        int n = recv(sock_, tmp, sizeof(tmp), 0);
-        if (n <= 0) {
-            connected_ = false;
+    // 4) Receive one valid reply frame: must start with ESC ACK/NAK
+    auto find_header = [&](const std::vector<uint8_t>& buf) -> size_t {
+        for (size_t i = 0; i + 1 < buf.size(); ++i) {
+            if (buf[i] == 0x1B && (buf[i + 1] == 0x06 || buf[i + 1] == 0x15)) return i;
+        }
+        return std::string::npos;
+        };
 
-            if (sock_ != INVALID_SOCKET) {
-                shutdown(sock_, SD_BOTH);
-                closesocket(sock_);
-                sock_ = INVALID_SOCKET;
+    while (true) {
+        // resync: tìm header
+        size_t h = find_header(acc);
+        if (h != std::string::npos && h > 0) {
+            // bỏ rác trước header
+            acc.erase(acc.begin(), acc.begin() + h);
+        }
+
+        // chỉ parse nếu buffer bắt đầu bằng ESC ACK/NAK
+        if (acc.size() >= 2 && acc[0] == 0x1B && (acc[1] == 0x06 || acc[1] == 0x15)) {
+            // tìm ESC ETX
+            size_t escEtxPos = std::string::npos;
+            for (size_t i = 0; i + 1 < acc.size(); ++i) {
+                if (acc[i] == 0x1B && acc[i + 1] == 0x03) { escEtxPos = i; break; }
             }
+
+            if (escEtxPos != std::string::npos) {
+                size_t after = escEtxPos + 2;
+                if (acc.size() > after) {
+                    size_t frameEnd = 0;
+                    if (acc[after] == 0x1B) {
+                        if (acc.size() > after + 1) frameEnd = after + 2;
+                    }
+                    else {
+                        frameEnd = after + 1;
+                    }
+
+                    if (frameEnd > 0) {
+                        reply.assign(acc.begin(), acc.begin() + frameEnd);
+
+                        // save leftover
+                        {
+                            std::lock_guard<std::mutex> lock(mtx_);
+                            rxPending_.assign(acc.begin() + frameEnd, acc.end());
+                        }
+
+                        if (!isStatusCmd) {
+                            Log(L"⬅️ RX: " + HexDump(reply), 1);
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // need more data
+        uint8_t tmp[1024];
+        int n = recv(s, (char*)tmp, sizeof(tmp), 0);
+
+        if (n == 0) {
+            Log(L"❌ recv(): peer closed", 2);
+            MarkDisconnected_NoThrow();
             return false;
         }
+        if (n == SOCKET_ERROR) {
+            int err = WSAGetLastError();
+            if (err == WSAETIMEDOUT) {
+                Log(L"⬅️ RX timeout", 1);
+                // timeout: clear pending to resync
+                {
+                    std::lock_guard<std::mutex> lock(mtx_);
+                    rxPending_.clear();
+                }
+                return false;
+            }
+            Log(L"❌ recv() failed Err=" + std::to_wstring(err), 2);
+            MarkDisconnected_NoThrow();
+            return false;
+        }
+
         acc.insert(acc.end(), tmp, tmp + n);
-        // Check for ESC ETX -> end of frame
-        for (size_t i = 0; i + 1 < acc.size(); ++i)
-        {
-            if (acc[i] == 0x1B && acc[i + 1] == 0x03)
-            {
-                buf = acc;
-                return true;
-            }
+
+        // tránh acc phình vô hạn nếu bị rác
+        if (acc.size() > 8192) {
+            // giữ lại phần cuối (chỉ để tìm header)
+            acc.erase(acc.begin(), acc.end() - 2048);
         }
     }
 }
 
-bool RciClient::SendRemoteFieldDataByName(const std::string& fieldName,const std::string& value,int timeoutMs){
+bool RciClient::SendRemoteFieldDataByName(const std::string& fieldName, const std::string& value, int timeoutMs) {
     // Payload format: [numFields=1][fieldName(<=31)+0][value+0]
     std::vector<uint8_t> payload;
     payload.push_back(0x01);
@@ -262,7 +456,7 @@ bool RciClient::SendRemoteFieldDataByName(const std::string& fieldName,const std
     return SendAndWaitAck(0x9E, payload, timeoutMs);
 }
 
-bool RciClient::RequestMessagePrintCount(uint32_t& outCount, std::string& outMsgName,const std::string& msgNameOpt,int timeoutMs){
+bool RciClient::RequestMessagePrintCount(uint32_t& outCount, std::string& outMsgName, const std::string& msgNameOpt, int timeoutMs) {
     outCount = 0;
     outMsgName.clear();
     // payload = 16 bytes name (all 0 => current message) :contentReference[oaicite:11]{index=11}
@@ -291,37 +485,60 @@ uint8_t RciClient::ComputeChecksum(const vector<uint8_t>& bytes) {
     return (uint8_t)((0x100 - (sum & 0xFF)) & 0xFF);
 }
 
-vector<uint8_t> RciClient::BuildFrame(uint8_t commandId, const vector<uint8_t>& payload, bool useSOH, bool includeChecksum) {
-    vector<uint8_t> frame;
-    const uint8_t ESC = 0x1B, STX = 0x02, SOH = 0x01, ETX = 0x03;
+std::vector<uint8_t> RciClient::BuildFrame(uint8_t commandId,const std::vector<uint8_t>& payload, bool useSOH, bool includeChecksum) 
+{
+    const uint8_t ESC = 0x1B;
+    const uint8_t STX = 0x02;
+    const uint8_t SOH = 0x01;
+    const uint8_t ETX = 0x03;
 
+    std::vector<uint8_t> frame;
+    frame.reserve(2 + 2 + payload.size() * 2 + 4);
+
+    // 1) Header: ESC + STX/SOH
     frame.push_back(ESC);
     frame.push_back(useSOH ? SOH : STX);
 
-    vector<uint8_t> body;
-    body.push_back(commandId);
-    body.insert(body.end(), payload.begin(), payload.end());
+    // 2) Checksum area (UNESCAPED): [STX/SOH][cmdid][payload...][ETX]
+    std::vector<uint8_t> csData;
+    csData.reserve(1 + 1 + payload.size() + 1);
+    csData.push_back(useSOH ? SOH : STX);
+    csData.push_back(commandId);
+    csData.insert(csData.end(), payload.begin(), payload.end());
+    csData.push_back(ETX);
 
-    for (auto b : body) {
-        if (b == ESC || b == STX || b == SOH || b == ETX) {
+    auto push_escaped_esc_only = [&](uint8_t b) {
+        // Manual behavior: only escape ESC itself (double ESC)
+        if (b == ESC) {
             frame.push_back(ESC);
-            frame.push_back(b);
+            frame.push_back(ESC);
         }
         else {
             frame.push_back(b);
         }
+        };
+
+    // 3) Command ID (special case: cmdid==ESC -> send ESC ESC)
+    push_escaped_esc_only(commandId);
+
+    // 4) Payload (do NOT escape <0x20; only double ESC)
+    for (uint8_t b : payload) {
+        push_escaped_esc_only(b);
     }
+
+    // 5) Tail delimiter: ESC ETX (MUST be after cmd+data)
     frame.push_back(ESC);
     frame.push_back(ETX);
+
+    // 6) Checksum byte (escape only if equals ESC)
     if (includeChecksum) {
-        vector<uint8_t> csData;
-        csData.push_back(useSOH ? SOH : STX);
-        csData.insert(csData.end(), body.begin(), body.end());
-        csData.push_back(ETX);
-        frame.push_back(ComputeChecksum(csData));
+        uint8_t chk = ComputeChecksum(csData);
+        push_escaped_esc_only(chk);
     }
+
     return frame;
 }
+
 // High-level LINX Commands
 bool RciClient::RequestStatus() {
     vector<uint8_t> reply;
@@ -342,19 +559,19 @@ bool RciClient::StopPrint() {
 }
 
 bool RciClient::StartJet() {
-    return SendCommandNoAck(0x0F);
+    return SendAndWaitAck(0x0F, {}, 3000);
 
 }
 
 bool RciClient::StopJet() {
-    return SendCommandNoAck(0x10);
+    return SendAndWaitAck(0x10, {}, 3000);
 }
 
 bool RciClient::LoadMessage(const string& name, uint16_t printCount) {
     vector<uint8_t> payload;
-    string fixed = name;
-    fixed.resize(8, '\0');
-    payload.insert(payload.end(), fixed.begin(), fixed.end());
+    std::vector<uint8_t> name16 = BuildMsgName16(name);
+    payload.insert(payload.end(), name16.begin(), name16.end());
+
     payload.push_back(printCount & 0xFF);
     payload.push_back((printCount >> 8) & 0xFF);
     vector<uint8_t> reply;
@@ -384,147 +601,74 @@ bool RciClient::DownloadMessageData(const vector<uint8_t>& data) {
     return SendFrame(BuildFrame(0x19, data), reply);
 }
 // Extended high-level utilities for AppController
-bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payload, int timeoutMs)
-{
-    if (timeoutMs <= 0) {
-        if (cmdid == 0x0F || cmdid == 0x10) timeoutMs = 60000;
-        else timeoutMs = 3000;
-    }
+bool RciClient::SendAndWaitAck(uint8_t cmdid, const std::vector<uint8_t>& payload, int timeoutMs) {
     std::vector<uint8_t> reply;
     if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs)) return false;
-    Log(L"Recv: " + ReplyToString(reply), 1);
 
-    if (reply.size() < 5) return false;
-    const uint8_t ESC = 0x1B, ACK = 0x06, NAK = 0x15;
-    if (reply[0] != ESC) return false;
-    if (reply[1] == NAK) return false;
-    if (reply[1] != ACK) return false;
-    // --- parse frame body robustly: find delimiter (STX or SOH) at offset 1 already known? ---
-    // find first STX or SOH (reply[1] is ACK, so STX/SOH is not here) 
-    // We need to extract the body bytes between delimiter and ESC ETX.
-    // Find the first occurrence of ESC + ETX from the end.
-    size_t esc_etx_pos = std::string::npos;
-    for (size_t i = 0; i + 1 < reply.size(); ++i) {
-        if (reply[i] == 0x1B && reply[i + 1] == 0x03) { esc_etx_pos = i; break; }
-    }
-    if (esc_etx_pos == std::string::npos) {
-        // cannot find end marker, fallback to previous simple check
-        uint8_t recvCmd = reply.size() > 4 ? reply[4] : 0x00;
-        //return recvCmd == cmdid;
-        if (cmdid == 0x11 && recvCmd == 0x11) {
-            lastStartPrintAck = true;    // StartPrint đã hợp lệ
-        }
-        if (cmdid == 0x12 && recvCmd == 0x12) {
-            lastStartPrintAck = false;   // StopPrint thì tắt cờ in
-        }
-    }
-    // body is bytes between reply[2] ... before esc_etx_pos
-    // But need to unescape bytes (ESC prefix)
-    std::vector<uint8_t> body;
-    // body starts at index 2 (p-status at [2])
-    for (size_t i = 2; i < esc_etx_pos; ++i) {
-        if (reply[i] == 0x1B) {
-            if (i + 1 < esc_etx_pos) {
-                body.push_back(reply[i + 1]);
-                ++i;
-            }
-            else {
-                // malformed escape, break
-                return false;
-            }
-        }
-        else {
-            body.push_back(reply[i]);
-        }
-    }
-    // body layout: [p_status, c_status, cmdid, ...]
-    if (body.size() < 3) return false;
-    uint8_t recvCmd = body[2];
-    // verify checksum: compute over (ACK) + body + ETX
-    std::vector<uint8_t> csArea;
-    csArea.push_back(reply[1]); // ACK or NAK byte
-    // append raw body (unescaped) but the protocol checksum computed on unescaped body bytes
-    csArea.insert(csArea.end(), body.begin(), body.end());
-    csArea.push_back(0x03); // ETX
-    uint8_t expected = ComputeChecksum(csArea);
-    // determine received checksum (after ESC ETX)
-    // position after esc_etx_pos + 2
-    size_t after_etx = esc_etx_pos + 2;
-    if (after_etx >= reply.size()) return false;
-    uint8_t recvChk = 0;
-    if (reply[after_etx] == 0x1B) {
-        if (after_etx + 1 >= reply.size()) return false;
-        recvChk = reply[after_etx + 1];
-    }
-    else {
-        recvChk = reply[after_etx];
-    }
-    if (recvChk != expected) {
-        Log(L"⚠ Checksum mismatch on reply", 1);
-        return false;
-    }
-   // return recvCmd == cmdid;
-    if (cmdid == 0x11 && recvCmd == 0x11) {
-        lastStartPrintAck = true;    // StartPrint đã hợp lệ
-    }
-    if (cmdid == 0x12 && recvCmd == 0x12) {
-        lastStartPrintAck = false;   // StopPrint thì tắt cờ in
-    }
+    auto pr = ParseReplyAndVerify(reply, [](const std::vector<uint8_t>& v) { return RciClient::ComputeChecksum(v); });
+    if (!pr.ok) return false;
+    if (!pr.ack) return false;
+    if (pr.cmdid != cmdid) return false;
     return true;
 }
 
-bool RciClient::SendAndGetBody(uint8_t cmdid,const std::vector<uint8_t>& payload,std::vector<uint8_t>& outBody,int timeoutMs){
+bool RciClient::SendAndGetBody(uint8_t cmdid, const std::vector<uint8_t>& payload, std::vector<uint8_t>& outBody, int timeoutMs) {
     outBody.clear();
     std::vector<uint8_t> reply;
-    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs))
-        return false;
+    if (!SendFrame(BuildFrame(cmdid, payload), reply, timeoutMs)) return false;
 
-    if (reply.size() < 5) return false;
-    const uint8_t ESC = 0x1B, ACK = 0x06, NAK = 0x15;
-    if (reply[0] != ESC) return false;
-    if (reply[1] == NAK) return false;
-    if (reply[1] != ACK) return false;
-    // Find ESC ETX
-    size_t esc_etx_pos = std::string::npos;
-    for (size_t i = 0; i + 1 < reply.size(); ++i) {
-        if (reply[i] == 0x1B && reply[i + 1] == 0x03) { esc_etx_pos = i; break; }
-    }
-    if (esc_etx_pos == std::string::npos) return false;
-    // Unescape body bytes (from index 2 .. before ESC ETX)
-    std::vector<uint8_t> body;
-    for (size_t i = 2; i < esc_etx_pos; ++i) {
-        if (reply[i] == 0x1B) {
-            if (i + 1 >= esc_etx_pos) return false;
-            body.push_back(reply[i + 1]);
-            ++i;
-        }
-        else {
-            body.push_back(reply[i]);
-        }
-    }
-    // body layout: [p_status, c_status, cmdid, ...] :contentReference[oaicite:9]{index=9}
-    if (body.size() < 3) return false;
-    if (body[2] != cmdid) return false;
-    outBody = std::move(body);
+    auto pr = ParseReplyAndVerify(reply, [](const std::vector<uint8_t>& v) { return RciClient::ComputeChecksum(v); });
+    if (!pr.ok || !pr.ack) return false;
+    if (pr.cmdid != cmdid) return false;
+
+    // outBody format bạn đang dùng: [p_status, c_status, cmdid, data...]
+    outBody.push_back(pr.p_status);
+    outBody.push_back(pr.c_status);
+    outBody.push_back(pr.cmdid);
+    outBody.insert(outBody.end(), pr.data.begin(), pr.data.end());
     return true;
 }
 
 PrinterStatus RciClient::RequestStatusEx() {
-    std::vector<uint8_t> reply;
-    PrinterStatus s;
+    PrinterStatus s; // default all zero/false
     if (!IsConnected()) return s;
+
+    std::vector<uint8_t> reply;
+    // Status request: command 0x14
     if (!SendFrame(BuildFrame(0x14), reply, 500)) return s;
 
-    const uint8_t ESC = 0x1B, ACK = 0x06;
-    if (reply.size() >= 13 && reply[0] == ESC && reply[1] == ACK) {
-        s.jetState = reply[5];
-        s.printState = reply[6];
-        s.errorMask = (reply[7] << 24) | (reply[8] << 16) | (reply[9] << 8) | reply[10];
-        
-        s.jetOn = (s.jetState == 0x00);
-        s.printing = (s.printState == 0x04 ); // 04 = đang in
-        s.idle = (s.printState == 0x02);
-    }
+    auto pr = ParseReplyAndVerify(reply, [](const std::vector<uint8_t>& v) {
+        return RciClient::ComputeChecksum(v);
+        });
+
+    if (!pr.ok || !pr.ack || pr.cmdid != 0x14) return s;
+
+    // Manual: reply data for 14H includes:
+    // Jet state (1), Print state (1), 32-bit Error Mask (4 bytes LSB first). :contentReference[oaicite:7]{index=7}
+    if (pr.data.size() < 2 + 4) return s;
+
+    s.jetState = pr.data[0];
+    s.printState = pr.data[1];
+
+    // error mask: LSB-first (low byte first) :contentReference[oaicite:8]{index=8}
+    s.errorMask = ReadU32_LSB_First(&pr.data[2]);
+
+    // Decode according to manual states :contentReference[oaicite:9]{index=9}
+    // Jet states:
+    // 00 Running, 01 Startup, 02 Shutdown, 03 Stopped, 04 Fault
+    s.jetOn = (s.jetState == 0x00); // running
+
+    // Print states:
+    // 00 Printing
+    // 02 Idle (ready for start print)
+    // 04 Waiting (waiting trigger/delay)
+    // 06 Printing/Generating Pixels (also printing)
+    s.idle = (s.printState == 0x02);
+
+    s.printing = (s.printState == 0x00 || s.printState == 0x06);
+
+    // Optional: you may consider "ready" when jet running AND idle
+    // (AppController sẽ quyết định mapping state machine)
     return s;
 }
 // Utility
@@ -540,7 +684,15 @@ std::wstring RciClient::ReplyToString(const vector<uint8_t>& reply) {
     return ws.str();
 }
 
-bool RciClient::SendCommandNoAck(uint8_t cmdid, const std::vector<uint8_t>& payload) {
-    std::vector<uint8_t> frame = BuildFrame(cmdid, payload);
-    return SendRaw(frame);
+bool RciClient::SetMessagePrintCount(uint32_t count, const std::string& msgNameOpt, int timeoutMs) {
+    // payload = [count 4 bytes LSB-first] + [msgName 16 bytes]
+    std::vector<uint8_t> payload;
+    payload.reserve(4 + 16);
+    payload.push_back((uint8_t)(count & 0xFF));
+    payload.push_back((uint8_t)((count >> 8) & 0xFF));
+    payload.push_back((uint8_t)((count >> 16) & 0xFF));
+    payload.push_back((uint8_t)((count >> 24) & 0xFF));
+    std::vector<uint8_t> name16 = BuildMsgName16(msgNameOpt); // 16 bytes, all 0 => current
+    payload.insert(payload.end(), name16.begin(), name16.end()); return SendAndWaitAck(0x8C, payload, timeoutMs);
+
 }

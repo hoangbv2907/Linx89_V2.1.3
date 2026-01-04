@@ -12,7 +12,7 @@ public:
 	// Tạo RichEdit control
     HWND Create(HWND hParent, int x, int y, int width, int height);
 	// Thêm tin nhắn vào RichEdit control
-    void AddMessage(const std::wstring& text);
+    void AddMessage(const std::wstring& text, int level);
 	// Xóa tất cả tin nhắn trong RichEdit control
     void Clear();
 	// Đặt font tùy chỉnh cho RichEdit control
