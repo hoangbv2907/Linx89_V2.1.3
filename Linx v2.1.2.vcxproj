@@ -140,6 +140,7 @@
     <ClInclude Include="PrintPersistData.h" />
     <ClInclude Include="PrintPersistStorage.h" />
     <ClInclude Include="RciClient.h" />
+    <ClInclude Include="RciWarnings.h" />
     <ClInclude Include="RequestQueue.h" />
     <ClInclude Include="ResourceTracker.h" />
     <ClInclude Include="ThreadSafeQueue.h" />
@@ -154,6 +155,7 @@
     <ClCompile Include="ModernButton.cpp" />
     <ClCompile Include="PrintPersistStorage.cpp" />
     <ClCompile Include="RciClient.cpp" />
+    <ClCompile Include="RciWarnings.cpp" />
     <ClCompile Include="ToggleSwitch.cpp" />
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="WindowManager.cpp" />

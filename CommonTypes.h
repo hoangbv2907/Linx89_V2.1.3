@@ -1,19 +1,21 @@
-﻿#pragma once
+﻿
+//CommonTypes.h
+#pragma once
 #include <string>
 #include <vector>
 
 enum class PrinterStateType {
-	Disconnected,   //chua kết nối  
+    Disconnected,   //chua kết nối  
     Connected,      //da ket noi
-	Connecting,     //dang ket noi
-	Reconnecting,   //dang ket noi lai
-	StartingJet,    //dang bat jet
-	StopingJet,     //dang tat jet
-	Idle,           //jet off, máy vừa bật lên
+    Connecting,     //dang ket noi
+    Reconnecting,   //dang ket noi lai
+    StartingJet,    //dang bat jet
+    StopingJet,     //dang tat jet
+    Idle,           //jet off, máy vừa bật lên
     Ready,           // paused jet on, print off
-	Printing,       //jet on, print on
-	Error,          // có lỗi
-	Unknown            // trạng thái không xác định
+    Printing,       //jet on, print on
+    Error,          // có lỗi
+    Unknown            // trạng thái không xác định
 };
 
 enum class RequestType {
@@ -59,7 +61,7 @@ struct Request {
     std::wstring data;      // message text
     int count = 0;
     std::wstring ipAddress; // not used but kept for compatibility
-	std::wstring fieldName; // for remote field updates
+    std::wstring fieldName; // for remote field updates
 };
 // Convert PrinterState to human-readable text
 inline std::wstring StateToText(const PrinterState& st) {

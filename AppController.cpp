@@ -14,10 +14,32 @@
 #include "PrintPersistStorage.h"
 #include "MessageBuilder.h"
 #include "EncodingUtils.h"
+#include "RciWarnings.h"
 // ================== Helper functions (namespace ẩn) ==================
+static std::wstring ToHex2(uint8_t v) {
+    wchar_t buf[8];
+    swprintf(buf, 8, L"%02X", v);
+    return buf;
+}
+
+static std::wstring ToHex8(uint32_t v) {
+    wchar_t buf[16];
+    swprintf(buf, 16, L"%08X", v);
+    return buf;
+}
+
+static std::wstring JoinWithComma(const std::vector<std::wstring>& items) {
+    std::wstring out;
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (i) out += L", ";
+        out += items[i];
+    }
+    return out;
+}
+
 namespace {
     template<typename T>  // T: kiểu status trả về từ RciClient::RequestStatusEx()
-    PrinterStatus ConvertFromRciStatus(const T& raw) { 
+    PrinterStatus ConvertFromRciStatus(const T& raw) {
         if (raw.errorMask != 0) {   // Có lỗi → Error
             return PrinterStatus::Error;
         }
@@ -41,13 +63,13 @@ namespace {
     }
 }
 // ================== Constructor / Destructor ==================
-AppController::AppController(HWND mainWindow): mainWindow_(mainWindow),resourceTracker("AppController"), lastJetOn_(false) {
+AppController::AppController(HWND mainWindow) : mainWindow_(mainWindow), resourceTracker("AppController"), lastJetOn_(false) {
     printerModel_ = std::make_unique<PrinterModel>();   // Model lưu trạng thái máy in
     rciClient_ = std::make_unique<RciClient>();      // Client RCI Linx 8900
 
     //== ĐĂNG KÝ CALLBACK LOG TỪ RCI CLIENT ==
     rciClient_->SetMessageCallback([this](const std::wstring& msg, int level) {
-        this->SendLogMessage(L"[Máy in] " + msg, level); 
+        this->SendLogMessage(L"[Máy in] " + msg, level);
         });
     // ========== ĐĂNG KÝ CLEANUP TASKS ==========
     // 1. RCI Client cleanup
@@ -216,29 +238,7 @@ bool AppController::StopWorkerThread(int timeoutMs) {
 
     return success;
 }
-
-void AppController::SavePrintDataOnExit(){
-    PrintPersistData data;
-    data.message = WideToUtf8(printerModel_->GetCurrentJobContent());
-    data.targetCount = printerModel_->GetTargetCount();
-    data.printedCount = printerModel_->GetCurrentCount();
-    PrintPersistStorage::Save(data);
-}
-
-void AppController::LoadPrintDataOnStart(){
-    if (persistLoaded_) return;
-    persistLoaded_ = true;
-
-    auto loaded = PrintPersistStorage::Load();
-    if (!loaded) return;
-
-    const auto& d = *loaded;
-
-    printerModel_->SetCurrentJob(Utf8ToWide(d.message), d.targetCount);
-    printerModel_->UpdateJobProgress(d.printedCount);
-    SendStateUpdate();
-}
-// ================== Emergency / Comprehensive Cleanup ==================
+// Cleanup khẩn cấp
 void AppController::EmergencyCleanup() {
     static std::atomic<bool> emergencyCleanupInProgress{ false };
     if (emergencyCleanupInProgress.exchange(true)) {
@@ -266,7 +266,7 @@ void AppController::EmergencyCleanup() {
     resourceTracker.clearWithoutCleanup();
     Logger::GetInstance().Write(L"⚠️ EMERGENCY CLEANUP COMPLETED");
 }
-
+// Shutdown bình thường
 void AppController::ComprehensiveCleanup() {
     Logger::GetInstance().Write(L"=== STARTING COMPREHENSIVE CLEANUP ===");
     if (printerModel_) {
@@ -275,7 +275,7 @@ void AppController::ComprehensiveCleanup() {
     }
     static std::atomic<bool> comprehensiveCleanupInProgress{ false };
     if (comprehensiveCleanupInProgress.exchange(true)) {
-        
+
         Logger::GetInstance().Write(L"ComprehensiveCleanup already in progress");
         return;
     }
@@ -310,7 +310,7 @@ void AppController::ComprehensiveCleanup() {
 
     Logger::GetInstance().Write(L"=== COMPREHENSIVE CLEANUP COMPLETED ===");
 }
-// ================== UI Public API ==================
+// ================== UI Facade (enqueue request only) ==================
 void AppController::Connect(const std::wstring& ipAddress) {
     // 1. set state Connecting để UI đổi sang nền vàng
     PrinterState st = printerModel_->GetState();
@@ -329,6 +329,34 @@ void AppController::Connect(const std::wstring& ipAddress) {
 
 void AppController::Disconnect() {
     Request req{ RequestType::RequestDisconnect };
+    requestQueue_.Push(req);
+}
+
+void AppController::UploadContent(const std::wstring& content, int count) {
+    if (!ValidatePrintContent(content)) {
+        SendLogMessage(L"Nội dung in không hợp lệ", 2);
+        return;
+    }
+    if (count <= 0) count = printerModel_->GetTargetCount();
+    Request req{ RequestType::RequestUploadContent };
+    req.data = content;
+    req.count = count;
+    requestQueue_.Push(req);
+}
+
+void AppController::SetCount(int count) {
+    Request req{ RequestType::RequestSetCount };
+    req.count = count;
+    requestQueue_.Push(req);
+}
+
+void AppController::StartJet() {
+    Request req{ RequestType::RequestStartJet };
+    requestQueue_.Push(req);
+}
+
+void AppController::StopJet() {
+    Request req{ RequestType::RequestStopJet };
     requestQueue_.Push(req);
 }
 
@@ -353,42 +381,14 @@ void AppController::StopPrinting() {
     requestQueue_.Push(req);
 }
 
-void AppController::SetCount(int count) {
-    Request req{ RequestType::RequestSetCount };
-    req.count = count;
-    requestQueue_.Push(req);
-}
-
-void AppController::UploadContent(const std::wstring& content, int count) {
-    if (!ValidatePrintContent(content)) {
-        SendLogMessage(L"Nội dung in không hợp lệ", 2);
-        return;
-    }
-    if (count <= 0) count = printerModel_->GetTargetCount();
-    Request req{ RequestType::RequestUploadContent };
-    req.data = content;
-    req.count = count;
-    requestQueue_.Push(req);
-}
-
-void AppController::StartJet() {
-    Request req{ RequestType::RequestStartJet };
-    requestQueue_.Push(req);
-}
-
-void AppController::StopJet() {
-    Request req{ RequestType::RequestStopJet };
-    requestQueue_.Push(req);
-}
-
-void AppController::UploadRemoteFieldData(const std::wstring& fieldName,const std::wstring& value)
+void AppController::UploadRemoteFieldData(const std::wstring& fieldName, const std::wstring& value)
 {
     Request req{ RequestType::RequestUploadRemoteField };
     req.fieldName = fieldName;
     req.data = value;              // tận dụng sẵn field data (wstring)
     requestQueue_.Push(req);
 }
-
+// ================== Validation / Policy ==================
 bool AppController::ValidatePrintContent(const std::wstring& content) {
     return !content.empty() && content.length() <= 1000;
 }
@@ -396,7 +396,63 @@ bool AppController::ValidatePrintContent(const std::wstring& content) {
 bool AppController::ValidatePrintCount(int count) {
     return count > 0 && count <= 1000;
 }
-// ================== WORKER THREAD LOOP ==================
+// ================== Getters ==================
+PrinterState AppController::GetCurrentState() const {
+    return printerModel_->GetState();
+}
+
+bool AppController::IsConnected() const {
+    return rciClient_ && rciClient_->IsConnected();
+}
+
+void AppController::SetLastIp(const std::wstring& ip) {
+    if (printerModel_) {
+        printerModel_->SetConnectionInfo(ip, 9100);
+    }
+}
+// ================== Data persistence ==================
+void AppController::SavePrintDataOnExit() {
+    PrintPersistData data;
+    data.message = WideToUtf8(printerModel_->GetCurrentJobContent());
+    data.targetCount = printerModel_->GetTargetCount();
+    data.printedCount = printerModel_->GetCurrentCount();
+    PrintPersistStorage::Save(data);
+}
+
+void AppController::LoadPrintDataOnStart() {
+    if (persistLoaded_) return;
+    persistLoaded_ = true;
+
+    auto loaded = PrintPersistStorage::Load();
+    if (!loaded) return;
+
+    const auto& d = *loaded;
+
+    printerModel_->SetCurrentJob(Utf8ToWide(d.message), d.targetCount);
+    printerModel_->UpdateJobProgress(d.printedCount);
+    SendStateUpdate();
+}
+
+void AppController::SendStateUpdate() {
+    if (!mainWindow_) return;
+
+    auto state = printerModel_->GetState();
+    auto statusText = printerModel_->GetStatusText();
+    // ✅ Lấy dữ liệu job/count từ model
+    const auto& job = printerModel_->GetCurrentJobContent();
+    int target = (int)state.targetCount;     // hoặc printerModel_->GetTargetCount()
+    int printed = (int)state.printedCount;   // hoặc printerModel_->GetCurrentCount()
+
+    auto* msg = new PrinterStateMessage{};
+    msg->state = state;
+    msg->statusText = statusText;
+    msg->jobContent = job;
+    msg->targetCount = target;
+    msg->printedCount = printed;
+
+    if (!PostMessage(mainWindow_, WM_APP_PRINTER_UPDATE, (WPARAM)msg, 0)) delete msg;
+}
+// ================== Worker loop helpers ==================
 void AppController::WorkerLoop() {
     const auto POLL_INTERVAL = std::chrono::milliseconds(100);
     const auto RECONNECT_INTERVAL = std::chrono::seconds(2);
@@ -408,7 +464,7 @@ void AppController::WorkerLoop() {
                 Request req;
                 if (requestQueue_.Pop(req, 50)) {
                     HandleRequest(req);
-                    continue;      
+                    continue;
                 }
                 // 1) KIỂM TRA KẾT NỐI
                 bool connected = (rciClient_ && rciClient_->IsConnected());
@@ -431,7 +487,7 @@ void AppController::WorkerLoop() {
                         static int logCounter = 0;
                         if (logCounter++ % 20 == 0)
 
-                        std::this_thread::sleep_for(POLL_INTERVAL);
+                            std::this_thread::sleep_for(POLL_INTERVAL);
                         continue;
                     }
                     // 1.4) Giới hạn số lần reconnect
@@ -510,28 +566,311 @@ void AppController::HandleRequest(const Request& request) {
             std::wstring(errorMsg.begin(), errorMsg.end()), 2);
     }
 }
-// ================== REQUEST HANDLERS ==================
-void AppController::HandleDisconnectRequest() {
-    DisableAutoReconnect();
 
-    jetTransitioning_ = false;   // ⬅️ RESET
-    hasInitialStatus_ = false;   // ⬅️ RESET
-    lastJetOn_ = false;          // ⬅️ RESET
+void AppController::DoPeriodicPoll() {
+    if (!rciClient_ || !rciClient_->IsConnected()) return;
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCommandTime_).count();
 
-    if (rciClient_) {
-        rciClient_->Disconnect();
+    if (elapsed < 300) return;
+    HandleStatusRequest();
+    if (ShouldGetPrintCount()) {
+        HandlePrintCountRequest();
     }
+    if (ShouldAutoStartJet()) {
+        HandleStartJetRequest();
+    }
+    UpdatePrinterState();
+}
+
+void AppController::TryReconnect() {
+    if (reconnectAttempts_ >= MAX_RECONNECT_ATTEMPTS) return; // không log nữa
+    auto lastIp = printerModel_->GetIpAddress();
+    if (lastIp.empty()) return;
+
+    reconnectAttempts_++;
+    SendLogMessage(
+        L"Tự động reconnect lần " + std::to_wstring(reconnectAttempts_) +
+        L" tới " + lastIp + L"...", 1);
+    Request req{ RequestType::RequestConnect };
+    req.data = lastIp;
+    requestQueue_.Push(req);
+}
+// ================== Request handlers ==================
+// Poll/status
+void AppController::HandleStatusRequest() {
+    if (!rciClient_ || !rciClient_->IsConnected()) return;
+
+    PrinterStatus raw = rciClient_->RequestStatusEx();
+    if (!rciClient_->IsConnected()) return;
+
+    // =========================
+    // A) LOG P-STATUS / C-STATUS (chỉ khi đổi)
+    // =========================
+
+    // 1) P-STATUS
+    if (!hasLastStatus_ || raw.pStatus != lastPStatus_) {
+        if (raw.pStatus == 0 && hasLastStatus_ && lastPStatus_ != 0) {
+            SendLogMessage(L"✅ P-STATUS cleared", 0);
+        }
+        else if (raw.pStatus != 0) {
+            SendLogMessage(L"🔴 P-STATUS=0x" + ToHex2(raw.pStatus) + L" " + raw.pStatusText, 2);
+        }
+        lastPStatus_ = raw.pStatus;
+    }
+
+    // 2) C-STATUS (thêm log cleared + sửa level)
+    if (!hasLastStatus_ || raw.cStatus != lastCStatus_) {
+        if (raw.cStatus == 0 && hasLastStatus_ && lastCStatus_ != 0) {
+            SendLogMessage(L"✅ C-STATUS cleared", 0);
+        }
+        else if (raw.cStatus != 0) {
+            // 0x42/0x43 là warning; còn lại coi như error
+            int level = (raw.cStatus == 0x42 || raw.cStatus == 0x43) ? 1 : 2;
+            SendLogMessage(L"🟠 C-STATUS=0x" + ToHex2(raw.cStatus) + L" " + raw.cStatusText, level);
+        }
+        lastCStatus_ = raw.cStatus;
+    }
+
+    // =========================
+    // B) WARNING MASK (0x14) - DIFF BIT (ON/OFF)
+    // =========================
+    if (!hasLastStatus_ || raw.errorMask != lastErrorMask_) {
+        const uint32_t prev = hasLastStatus_ ? lastErrorMask_ : 0;
+        const uint32_t now = raw.errorMask;
+
+        const uint32_t added = now & ~prev;
+        const uint32_t cleared = prev & ~now;
+
+        if (added) {
+            auto addedList = DecodeWarningMask(added);
+            if (!addedList.empty()) {
+                SendLogMessage(L"⚠️ Warning ON: " + JoinWithComma(addedList), 1);
+            }
+            else {
+                SendLogMessage(L"⚠️ Warning ON (mask=0x" + ToHex8(added) + L")", 1);
+            }
+        }
+
+        if (cleared) {
+            auto clearedList = DecodeWarningMask(cleared);
+            if (!clearedList.empty()) {
+                SendLogMessage(L"✅ Warning OFF: " + JoinWithComma(clearedList), 0);
+            }
+            else {
+                SendLogMessage(L"✅ Warning OFF (mask=0x" + ToHex8(cleared) + L")", 0);
+            }
+        }
+
+        if (hasLastStatus_ && prev != 0 && now == 0) {
+            SendLogMessage(L"✅ All warnings cleared (mask=0)", 0);
+        }
+
+        lastErrorMask_ = now;
+    }
+
+    hasLastStatus_ = true;
+
+    // =========================
+    // C) UPDATE STATE MACHINE
+    // =========================
     PrinterState st = printerModel_->GetState();
 
-    st.status = PrinterStateType::Disconnected;
-    st.statusText = L"Ngắt kết nối";
-    st.jetOn = false;
-    st.printing = false;
+    st.jetOn = raw.jetOn;
+    st.printing = raw.printing;
+    st.jetTransitioning = jetTransitioning_;
+
+    const bool jetFault = (raw.jetState == 0x04);
+    const bool hasFault = (raw.pStatus != 0) || jetFault;
+    const bool hasWarning = (raw.errorMask != 0);
+
+    const bool jetOnNow = raw.jetOn;
+
+    // =========================
+    // D) HANDLE TRANSITION (Start/Stop Jet)
+    // =========================
+    if (jetTransitioning_) {
+        if (!hasInitialStatus_) {
+            lastJetOn_ = jetOnNow;
+            hasInitialStatus_ = true;
+        }
+
+        // ✅ Nếu có FAULT trong lúc transition → kết thúc transition ngay để khỏi kẹt
+        bool transitionDone = hasFault;
+
+        if (!transitionDone) {
+            if (st.status == PrinterStateType::StartingJet) {
+                transitionDone = (raw.jetState == 0x00 /*RUNNING*/);
+            }
+            else if (st.status == PrinterStateType::StopingJet) {
+                transitionDone = (raw.jetState == 0x03 /*STOPPED*/);
+            }
+            else {
+                transitionDone = (jetOnNow != lastJetOn_);
+            }
+        }
+
+        if (transitionDone) {
+            jetTransitioning_ = false;
+            st.jetTransitioning = false;
+
+            if (hasFault) {
+                st.status = PrinterStateType::Error;
+                st.errorMessage = (raw.pStatus != 0)
+                    ? (L"P-STATUS=0x" + ToHex2(raw.pStatus) + L" " + raw.pStatusText)
+                    : L"JET FAULT (jetState=0x04)";
+            }
+            else if (raw.printing) {
+                st.status = PrinterStateType::Printing;
+                st.errorMessage.clear();
+            }
+            else if (raw.jetOn) {
+                st.status = PrinterStateType::Ready;
+                st.errorMessage.clear();
+            }
+            else {
+                st.status = PrinterStateType::Idle;
+                st.errorMessage.clear();
+            }
+
+            // (tuỳ chọn) warning chỉ hiển thị nhẹ
+            // if (!hasFault && hasWarning) st.statusText += L" ⚠️";
+
+            st.statusText = StateToText(st);
+
+            lastJetOn_ = jetOnNow;
+            printerModel_->SetState(st);
+            SendStateUpdate();
+            return;
+        }
+
+        Logger::GetInstance().Write(L"🔄 HandleStatusRequest: Transition chưa xong, vẫn đang chờ...", 1);
+
+        st.statusText = StateToText(st);
+        printerModel_->SetState(st);
+        SendStateUpdate();
+        return;
+    }
+
+    // =========================
+    // E) NORMAL STATE
+    // =========================
+    if (hasFault) {
+        st.status = PrinterStateType::Error;
+        st.errorMessage = (raw.pStatus != 0)
+            ? (L"P-STATUS=0x" + ToHex2(raw.pStatus) + L" " + raw.pStatusText)
+            : L"JET FAULT (jetState=0x04)";
+    }
+    else if (raw.printing) {
+        st.status = PrinterStateType::Printing;
+        st.errorMessage.clear();
+    }
+    else if (raw.jetOn) {
+        st.status = PrinterStateType::Ready;
+        st.errorMessage.clear();
+    }
+    else {
+        st.status = PrinterStateType::Idle;
+        st.errorMessage.clear();
+    }
+
+    st.statusText = StateToText(st);
+
+    lastJetOn_ = jetOnNow;
+    hasInitialStatus_ = true;
 
     printerModel_->SetState(st);
+    SendStateUpdate();
+}
+// Đồng bộ print count
+void AppController::HandlePrintCountRequest() {
+    if (!rciClient_ || !rciClient_->IsConnected()) return;
+    uint32_t count = 0;
+    std::string msgName;
+    if (!rciClient_->RequestMessagePrintCount(count, msgName, "", 3000)) return;
+    if (msgName.empty()) return;
 
-    SendStateUpdate();            // bắt buộc
-    SendConnectionUpdate(false);  // UI chỉ là phụ
+    int cur = printerModel_->GetCurrentCount();
+    if (count == 0 && cur > 0) return;
+    printerModel_->UpdateJobProgress((int)count);
+
+    int targetCount = printerModel_->GetTargetCount();
+    if (targetCount > 0 && (int)count >= targetCount) {
+        HandleStopPrintRequest();
+        SendLogMessage(L"✅ Đã đạt số lượng in ", 0);
+    }
+}
+// Print
+void AppController::HandleStartPrintRequest(const Request& req) {
+    if (!rciClient_ || !rciClient_->IsConnected()) {
+        SendLogMessage(L"Chưa kết nối máy in", 2);
+        return;
+    }
+    PrinterStatus raw = rciClient_->RequestStatusEx();
+    if (!raw.jetOn) HandleStartJetRequest();// 1️⃣ Start Jet
+
+    static int jobId = 1;// 2️⃣ Tạo message name duy nhất
+    std::string msgName = "JOB" + std::to_string(jobId++);
+    msgName.resize(8, '0'); // đảm bảo 8 ký tự
+    // 3️⃣ Encode nội dung in
+    auto fieldData = MessageBuilder().BuildSimpleTextField(req.data);
+    // 4️⃣ Download field / message
+    if (!rciClient_->DownloadRemoteField(fieldData)) {
+        SendLogMessage(L"Lỗi DownloadMessage", 2);
+        return;
+    }
+    // 5️⃣ Load message
+    if (!rciClient_->LoadMessage(msgName, (uint16_t)req.count)) {
+        SendLogMessage(L"Lỗi LoadMessage", 2);
+        return;
+    }
+    // 6️⃣ Start print
+    if (!rciClient_->StartPrint()) {
+        SendLogMessage(L"Lỗi StartPrint", 2);
+        return;
+    }
+    printerModel_->SetCurrentJob(req.data, req.count);
+    SendLogMessage(L"Đã gửi job in mới (RCI chuẩn)", 0);
+}
+
+void AppController::HandleStopPrintRequest() {
+    if (rciClient_ && rciClient_->IsConnected()) {
+        if (!rciClient_->StopPrint()) {
+            SendLogMessage(L"Lỗi gửi lệnh StopPrint", 2);
+            return;
+        }
+    }
+    SendLogMessage(L"Đã gửi lệnh dừng in, chờ máy in phản hồi...", 0);
+}
+// Job/content/count
+void AppController::HandleUploadContentRequest(const Request& request) {
+    int target = request.count;
+    if (target <= 0) target = 1;
+    printerModel_->SetCurrentJob(request.data, target);
+    SendLogMessage(L"Đã cập nhật nội dung in và số lượng: " + std::to_wstring(target), 0);
+    SavePrintDataOnExit();
+}
+
+void AppController::HandleSetCountRequest(const Request& req) {
+    int newTarget = req.count;
+    if (!ValidatePrintCount(newTarget)) {
+        SendLogMessage(L"Số lượng in phải từ 1-1000", 2);
+        return;
+    }
+    // ✅ đảm bảo chọn đúng message trước khi set count
+    // ví dụ: dùng lastLoadedMsgName_ (bạn cần lưu nó khi LoadMessage OK)
+    bool ok = rciClient_->SetMessagePrintCount((uint32_t)newTarget, "", 3000);
+    if (!ok) {
+        SendLogMessage(L"❌ Set Message Print Count (0x8C) thất bại", 2);
+        return;
+    }
+    // ✅ cập nhật model sau khi printer OK
+    int curPrinted = printerModel_->GetCurrentCount();
+    printerModel_->SetCurrentJob(printerModel_->GetCurrentJobContent(), newTarget);
+    printerModel_->UpdateJobProgress(0);
+
+    SendStateUpdate();
+    SendLogMessage(L"✅ Đã gửi số lượng in lên máy (0x8C)", 4);
 }
 
 void AppController::HandleUploadRemoteFieldRequest(const Request& req)
@@ -551,127 +890,10 @@ void AppController::HandleUploadRemoteFieldRequest(const Request& req)
     SavePrintDataOnExit();
     SendLogMessage(L"✅ Đã gửi nội dung vào Remote Field (0x9E) và lưu nội dung", 1);
 }
-
-void AppController::DoPeriodicPoll() {
-    if (!rciClient_ || !rciClient_->IsConnected()) return;
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCommandTime_).count();
-
-    if (elapsed < 300) return;
-    HandleStatusRequest();
-    if (ShouldGetPrintCount()) {
-        HandlePrintCountRequest();
-    }
-    if (ShouldAutoStartJet()) {
-        HandleStartJetRequest();
-    }
-    UpdatePrinterState();
-}
-
-void AppController::HandleStatusRequest() {
-    if (!rciClient_ || !rciClient_->IsConnected()) return;
-    PrinterStatus raw = rciClient_->RequestStatusEx();
-    if (!rciClient_->IsConnected()) return;
-    PrinterState st = printerModel_->GetState();
-    std::wstring text = StateToText(st);
-    printerModel_->SetStatusText(text);
-    // ===== Mapping FLAGS =====
-    st.jetOn = raw.jetOn;
-    st.printing = raw.printing;
-    st.jetTransitioning = jetTransitioning_;
-    st.statusText = text;
-    bool jetOnNow = raw.jetOn;
- 
-    if (jetTransitioning_) {
-        // ✅ Lần đầu sau khi bắt đầu transition: ghi lại snapshot (để debug)
-        if (!hasInitialStatus_) {
-            lastJetOn_ = jetOnNow;
-            hasInitialStatus_ = true;
-        }
-
-        bool transitionDone = false;
-
-        // ✅ KẾT THÚC TRANSITION THEO JET STATE (chuẩn cho Start/Stop Jet)
-        if (st.status == PrinterStateType::StartingJet) {
-            transitionDone = (raw.jetState == 0x00 /*RUNNING*/);
-        }
-        else if (st.status == PrinterStateType::StopingJet) {
-            transitionDone = (raw.jetState == 0x03 /*STOPPED*/);
-        }
-        else {
-            // fallback cũ nếu vì lý do nào đó không có status loại transition
-            transitionDone = (jetOnNow != lastJetOn_);
-        }
-
-        if (transitionDone) {
-            jetTransitioning_ = false;
-            st.jetTransitioning = false;
-
-            // Chuyển sang trạng thái ổn định
-            if (raw.errorMask != 0) {
-                st.status = PrinterStateType::Error;
-                st.errorMessage = L"ErrorMask: 0x" + std::to_wstring(raw.errorMask);
-            }
-            else if (raw.printing) {
-                st.status = PrinterStateType::Printing;
-            }
-            else if (raw.jetOn) {
-                st.status = PrinterStateType::Ready;
-            }
-            else {
-                st.status = PrinterStateType::Idle;
-            }
-
-            lastJetOn_ = jetOnNow;
-            printerModel_->SetState(st);
-            SendStateUpdate();
-            return;
-        }
-
-        Logger::GetInstance().Write(L"🔄 HandleStatusRequest: Transition chưa xong, vẫn đang chờ...", 1);
-
-        // Vẫn đang transition: chỉ update info phụ
-        printerModel_->SetState(st);
-        SendStateUpdate();
-        return;
-    }
-
-    // 🚦 KHÔNG CÓ TRANSITION - State machine bình thường
-    if (raw.errorMask != 0) {
-        st.status = PrinterStateType::Error;
-        st.errorMessage = L"ErrorMask: 0x" + std::to_wstring(raw.errorMask);
-    }
-    else if (raw.printing) st.status = PrinterStateType::Printing;
-    else if (raw.jetOn) st.status = PrinterStateType::Ready;
-    else st.status = PrinterStateType::Idle;
-    // Cập nhật tracking
-    lastJetOn_ = jetOnNow;
-    hasInitialStatus_ = true;
-    printerModel_->SetState(st);
-    SendStateUpdate();
-}
-
-void AppController::HandlePrintCountRequest() {
-    if (!rciClient_ || !rciClient_->IsConnected()) return;
-    uint32_t count = 0;
-    std::string msgName;
-    if (!rciClient_->RequestMessagePrintCount(count, msgName, "", 3000)) return;
-    if (msgName.empty()) return;
-
-    int cur = printerModel_->GetCurrentCount();
-    if (count == 0 && cur > 0) return;
-    printerModel_->UpdateJobProgress((int)count);
-
-    int targetCount = printerModel_->GetTargetCount();
-    if (targetCount > 0 && (int)count >= targetCount) {
-        HandleStopPrintRequest();
-        SendLogMessage(L"✅ Đã đạt số lượng in ", 0);
-    }
-}
-
+// Jet
 bool AppController::HandleStartJetRequest() {
     if (!rciClient_ || !rciClient_->IsConnected()) return false;
-    if (jetTransitioning_) 
+    if (jetTransitioning_)
     {
         auto st0 = printerModel_->GetState();
         if (st0.jetOn) {
@@ -723,58 +945,8 @@ void AppController::HandleStopJetRequest() {
     lastCommandTime_ = std::chrono::steady_clock::now();
     SendStateUpdate();
 }
-
-void AppController::HandleStartPrintRequest(const Request& req){
-    if (!rciClient_ || !rciClient_->IsConnected()) {
-        SendLogMessage(L"Chưa kết nối máy in", 2);
-        return;
-    }
-    PrinterStatus raw = rciClient_->RequestStatusEx();
-    if (!raw.jetOn) HandleStartJetRequest();// 1️⃣ Start Jet
-
-    static int jobId = 1;// 2️⃣ Tạo message name duy nhất
-    std::string msgName = "JOB" + std::to_string(jobId++);
-    msgName.resize(8, '0'); // đảm bảo 8 ký tự
-    // 3️⃣ Encode nội dung in
-    auto fieldData = MessageBuilder().BuildSimpleTextField(req.data);
-    // 4️⃣ Download field / message
-    if (!rciClient_->DownloadRemoteField(fieldData)) {
-        SendLogMessage(L"Lỗi DownloadMessage", 2);
-        return;
-    }
-    // 5️⃣ Load message
-    if (!rciClient_->LoadMessage(msgName, (uint16_t)req.count)) {
-        SendLogMessage(L"Lỗi LoadMessage", 2);
-        return;
-    }
-    // 6️⃣ Start print
-    if (!rciClient_->StartPrint()) {
-        SendLogMessage(L"Lỗi StartPrint", 2);
-        return;
-    }
-    printerModel_->SetCurrentJob(req.data, req.count);
-    SendLogMessage(L"Đã gửi job in mới (RCI chuẩn)", 0);
-}
-
-void AppController::HandleStopPrintRequest() {
-    if (rciClient_ && rciClient_->IsConnected()) {
-        if (!rciClient_->StopPrint()) {
-            SendLogMessage(L"Lỗi gửi lệnh StopPrint", 2);
-            return;
-        }
-    }
-    SendLogMessage(L"Đã gửi lệnh dừng in, chờ máy in phản hồi...", 0);
-}
-
-void AppController::HandleUploadContentRequest(const Request& request) {
-    int target = request.count;
-    if (target <= 0) target = 1;
-    printerModel_->SetCurrentJob(request.data, target);
-    SendLogMessage( L"Đã cập nhật nội dung in và số lượng: " + std::to_wstring(target), 0);
-    SavePrintDataOnExit();
-}
-
-void AppController::HandleConnectRequest(const Request& req){
+// Connection
+void AppController::HandleConnectRequest(const Request& req) {
     SendLogMessage(L"Đang kết nối...", 0);
     printerModel_->SetConnectionInfo(req.data, 9100);
     bool ok = rciClient_->Connect(req.data, 9100, 3000);
@@ -803,7 +975,7 @@ void AppController::HandleConnectRequest(const Request& req){
         SendConnectionUpdate(false);
         return;
     }
-	reconnectAttempts_ = 0; // reset lại bộ đếm nếu kết nối thành công
+    reconnectAttempts_ = 0; // reset lại bộ đếm nếu kết nối thành công
     SendStateUpdate();
     SendConnectionUpdate(true);
     if (rciClient_ && rciClient_->IsConnected()) {
@@ -815,59 +987,30 @@ void AppController::HandleConnectRequest(const Request& req){
     EnableAutoReconnect();
 }
 
-void AppController::HandleSetCountRequest(const Request& req) {
-    int newTarget = req.count;
-    if (!ValidatePrintCount(newTarget)) {
-        SendLogMessage(L"Số lượng in phải từ 1-1000", 2);
-        return;
+void AppController::HandleDisconnectRequest() {
+    DisableAutoReconnect();
+
+    jetTransitioning_ = false;   // ⬅️ RESET
+    hasInitialStatus_ = false;   // ⬅️ RESET
+    lastJetOn_ = false;          // ⬅️ RESET
+
+    if (rciClient_) {
+        rciClient_->Disconnect();
     }
-    // ✅ đảm bảo chọn đúng message trước khi set count
-    // ví dụ: dùng lastLoadedMsgName_ (bạn cần lưu nó khi LoadMessage OK)
-    bool ok = rciClient_->SetMessagePrintCount((uint32_t)newTarget, "", 3000);
-    if (!ok) {
-        SendLogMessage(L"❌ Set Message Print Count (0x8C) thất bại", 2);
-        return;
-    }
-    // ✅ cập nhật model sau khi printer OK
-    int curPrinted = printerModel_->GetCurrentCount();
-    printerModel_->SetCurrentJob(printerModel_->GetCurrentJobContent(), newTarget);
-    printerModel_->UpdateJobProgress(0);
+    PrinterState st = printerModel_->GetState();
 
-    SendStateUpdate();
-    SendLogMessage(L"✅ Đã gửi số lượng in lên máy (0x8C)", 4);
+    st.status = PrinterStateType::Disconnected;
+    st.statusText = L"Ngắt kết nối";
+    st.jetOn = false;
+    st.printing = false;
+
+    printerModel_->SetState(st);
+
+    SendStateUpdate();            // bắt buộc
+    SendConnectionUpdate(false);  // UI chỉ là phụ
 }
-
-void AppController::TryReconnect() {
-    if (reconnectAttempts_ >= MAX_RECONNECT_ATTEMPTS) return; // không log nữa
-    auto lastIp = printerModel_->GetIpAddress();
-    if (lastIp.empty()) return;
-
-    reconnectAttempts_++;
-    SendLogMessage(
-        L"Tự động reconnect lần " + std::to_wstring(reconnectAttempts_) +
-        L" tới " + lastIp + L"...", 1);
-    Request req{ RequestType::RequestConnect };
-    req.data = lastIp;
-    requestQueue_.Push(req);
-}
-// ================== STATE MACHINE LOGIC ==================
-bool AppController::ShouldPollStatus() const {
-    return rciClient_ && rciClient_->IsConnected();
-}
-
-bool AppController::ShouldGetPrintCount() const {
-    auto state = printerModel_->GetState();
-    return state.status == PrinterStateType::Printing;
-}
-
-bool AppController::ShouldAutoStartJet() const {
-    auto state = printerModel_->GetState();
-    return (!state.jetOn)
-        && printerModel_->HasPendingPrintJob()
-        && !jetTransitioning_; 
-}
-
-void AppController::UpdatePrinterState(){
+// ================== State machine / policy ==================
+void AppController::UpdatePrinterState() {
     auto currentState = printerModel_->GetState();
     if (!rciClient_ || !rciClient_->IsConnected())// Nếu socket KHÔNG KẾT NỐI
     {
@@ -884,27 +1027,23 @@ void AppController::UpdatePrinterState(){
         return;
     }
 }
-// ================== THREAD-SAFE UI UPDATES ==================
-void AppController::SendStateUpdate() {
-    if (!mainWindow_) return;
 
-    auto state = printerModel_->GetState();
-    auto statusText = printerModel_->GetStatusText();
-    // ✅ Lấy dữ liệu job/count từ model
-    const auto& job = printerModel_->GetCurrentJobContent();
-    int target = (int)state.targetCount;     // hoặc printerModel_->GetTargetCount()
-    int printed = (int)state.printedCount;   // hoặc printerModel_->GetCurrentCount()
-
-    auto* msg = new PrinterStateMessage{};
-    msg->state = state;
-    msg->statusText = statusText;
-    msg->jobContent = job;
-    msg->targetCount = target;
-    msg->printedCount = printed;
-
-    if (!PostMessage(mainWindow_, WM_APP_PRINTER_UPDATE, (WPARAM)msg, 0)) delete msg;
+bool AppController::ShouldPollStatus() const {
+    return rciClient_ && rciClient_->IsConnected();
 }
 
+bool AppController::ShouldGetPrintCount() const {
+    auto state = printerModel_->GetState();
+    return state.status == PrinterStateType::Printing;
+}
+
+bool AppController::ShouldAutoStartJet() const {
+    auto state = printerModel_->GetState();
+    return (!state.jetOn)
+        && printerModel_->HasPendingPrintJob()
+        && !jetTransitioning_;
+}
+// ================== Messaging to UI ==================
 void AppController::SendLogMessage(const std::wstring& text, int level) {
     if (!mainWindow_) return;
     auto* msg = new LogMessage{ text, level };
@@ -916,18 +1055,4 @@ void AppController::SendConnectionUpdate(bool connected) {
     auto ip = printerModel_->GetIpAddress();
     auto* msg = new ConnectionMessage{ connected, ip, 9100 };
     if (!PostMessage(mainWindow_, WM_APP_CONNECTION_UPDATE, (WPARAM)msg, 0)) delete msg;
-}
-
-PrinterState AppController::GetCurrentState() const {
-    return printerModel_->GetState();
-}
-
-bool AppController::IsConnected() const {
-    return rciClient_ && rciClient_->IsConnected();
-}
-
-void AppController::SetLastIp(const std::wstring& ip) {
-    if (printerModel_) {
-        printerModel_->SetConnectionInfo(ip, 9100);
-    }
 }

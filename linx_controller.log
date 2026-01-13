@@ -81890,4 +81890,148 @@
 22:00:31.568 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
 22:00:31.568 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
 22:00:31.568 [INFO] AppController initialized with 5 cleanup tasks
-22:00:31.573 [INFO] HandleCreate: Kh
+22:00:31.573 [INFO] HandleCreate: Kh20:59:08.110 [INFO] Logger initialized
+20:59:08.118 [INFO] Linx Controller starting...
+20:59:08.119 [INFO] WindowManager initialized
+20:59:08.127 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+20:59:08.128 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+20:59:08.128 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+20:59:08.128 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+20:59:08.128 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+20:59:08.129 [INFO] AppController initialized with 5 cleanup tasks
+20:59:08.134 [INFO] HandleCreate: Kh21:45:31.766 [INFO] Logger initialized
+21:45:31.776 [INFO] Linx Controller starting...
+21:45:31.776 [INFO] WindowManager initialized
+21:45:31.785 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+21:45:31.785 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+21:45:31.785 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+21:45:31.786 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+21:45:31.787 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+21:45:31.787 [INFO] AppController initialized with 5 cleanup tasks
+21:45:31.794 [INFO] HandleCreate: Kh22:21:09.143 [INFO] Logger initialized
+22:21:09.152 [INFO] Linx Controller starting...
+22:21:09.152 [INFO] WindowManager initialized
+22:21:09.158 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:21:09.159 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:21:09.159 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:21:09.159 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:21:09.159 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:21:09.160 [INFO] AppController initialized with 5 cleanup tasks
+22:21:09.167 [INFO] HandleCreate: Kh22:30:18.668 [INFO] Logger initialized
+22:30:18.681 [INFO] Linx Controller starting...
+22:30:18.681 [INFO] WindowManager initialized
+22:30:18.690 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:30:18.690 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:30:18.690 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:30:18.691 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:30:18.691 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:30:18.691 [INFO] AppController initialized with 5 cleanup tasks
+22:30:18.707 [INFO] HandleCreate: Kh23:17:15.949 [INFO] Logger initialized
+23:17:15.957 [INFO] Linx Controller starting...
+23:17:15.957 [INFO] WindowManager initialized
+23:17:15.962 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:17:15.963 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:17:15.963 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:17:15.963 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:17:15.963 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:17:15.963 [INFO] AppController initialized with 5 cleanup tasks
+23:17:15.968 [INFO] HandleCreate: Kh17:49:03.918 [INFO] Logger initialized
+17:49:03.926 [INFO] Linx Controller starting...
+17:49:03.926 [INFO] WindowManager initialized
+17:49:03.932 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+17:49:03.932 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+17:49:03.933 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+17:49:03.933 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+17:49:03.933 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+17:49:03.933 [INFO] AppController initialized with 5 cleanup tasks
+17:49:03.937 [INFO] HandleCreate: Kh22:07:25.243 [INFO] Logger initialized
+22:07:25.252 [INFO] Linx Controller starting...
+22:07:25.252 [INFO] WindowManager initialized
+22:07:25.258 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:07:25.258 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:07:25.259 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:07:25.259 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:07:25.259 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:07:25.259 [INFO] AppController initialized with 5 cleanup tasks
+22:07:25.266 [INFO] HandleCreate: Kh22:13:20.518 [INFO] Logger initialized
+22:13:20.519 [INFO] Linx Controller starting...
+22:13:20.519 [INFO] WindowManager initialized
+22:13:20.525 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:13:20.525 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:13:20.525 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:13:20.526 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:13:20.526 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:13:20.526 [INFO] AppController initialized with 5 cleanup tasks
+22:13:20.533 [INFO] HandleCreate: Kh22:18:24.012 [INFO] Logger initialized
+22:18:24.021 [INFO] Linx Controller starting...
+22:18:24.021 [INFO] WindowManager initialized
+22:18:24.029 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:18:24.029 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:18:24.029 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:18:24.030 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:18:24.030 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:18:24.030 [INFO] AppController initialized with 5 cleanup tasks
+22:37:07.978 [INFO] Logger initialized
+22:37:07.993 [INFO] Linx Controller starting...
+22:37:07.993 [INFO] WindowManager initialized
+22:37:08.002 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:37:08.002 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:37:08.002 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:37:08.003 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:37:08.003 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:37:08.003 [INFO] AppController initialized with 5 cleanup tasks
+22:37:08.009 [INFO] HandleCreate: Kh22:37:48.245 [INFO] Logger initialized
+22:37:48.246 [INFO] Linx Controller starting...
+22:37:48.246 [INFO] WindowManager initialized
+22:37:48.253 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:37:48.253 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:37:48.254 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:37:48.254 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:37:48.254 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:37:48.254 [INFO] AppController initialized with 5 cleanup tasks
+22:37:48.260 [INFO] HandleCreate: Kh22:43:27.911 [INFO] Logger initialized
+22:43:27.912 [INFO] Linx Controller starting...
+22:43:27.912 [INFO] WindowManager initialized
+22:43:27.921 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:43:27.921 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:43:27.921 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:43:27.922 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:43:27.922 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:43:27.922 [INFO] AppController initialized with 5 cleanup tasks
+22:50:35.390 [INFO] Logger initialized
+22:50:35.391 [INFO] Linx Controller starting...
+22:50:35.391 [INFO] WindowManager initialized
+22:50:35.396 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+22:50:35.396 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+22:50:35.397 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+22:50:35.397 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+22:50:35.397 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+22:50:35.397 [INFO] AppController initialized with 5 cleanup tasks
+22:50:35.404 [INFO] HandleCreate: Kh23:09:03.920 [INFO] Logger initialized
+23:09:03.929 [INFO] Linx Controller starting...
+23:09:03.929 [INFO] WindowManager initialized
+23:09:03.939 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:09:03.939 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:09:03.940 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:09:03.940 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:09:03.940 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:09:03.940 [INFO] AppController initialized with 5 cleanup tasks
+23:09:03.945 [INFO] HandleCreate: Kh23:12:24.683 [INFO] Logger initialized
+23:12:24.684 [INFO] Linx Controller starting...
+23:12:24.684 [INFO] WindowManager initialized
+23:12:24.689 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+23:12:24.689 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+23:12:24.689 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+23:12:24.690 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+23:12:24.690 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+23:12:24.690 [INFO] AppController initialized with 5 cleanup tasks
+21:41:57.992 [INFO] Logger initialized
+21:41:58.001 [INFO] Linx Controller starting...
+21:41:58.001 [INFO] WindowManager initialized
+21:41:58.008 [INFO] [AppController] Added cleanup task: RciClient_Disconnect
+21:41:58.008 [INFO] [AppController] Added cleanup task: WorkerThread_Stop
+21:41:58.008 [INFO] [AppController] Added cleanup task: RequestQueue_Clear
+21:41:58.009 [INFO] [AppController] Added cleanup task: PrinterModel_Cleanup
+21:41:58.009 [INFO] [AppController] Added cleanup task: MessageCallback_Clear
+21:41:58.009 [INFO] AppController initialized with 5 cleanup tasks
+21:41:58.013 [INFO] HandleCreate: Kh

@@ -92,6 +92,9 @@
     <ClInclude Include="EncodingUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RciWarnings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -120,6 +123,9 @@
     </ClCompile>
     <ClCompile Include="PrintPersistStorage.cpp">
       <Filter>Header Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="RciWarnings.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

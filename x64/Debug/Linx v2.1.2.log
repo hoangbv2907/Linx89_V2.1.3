@@ -1,3 +1,14 @@
-﻿  WindowManager.cpp
-C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(106,38): warning C4101: 'e': unreferenced local variable
+﻿  AppController.cpp
+  main.cpp
+  MessageLogger.cpp
+  ModernButton.cpp
+  PrintPersistStorage.cpp
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\PrintPersistStorage.cpp(54,45): warning C4101: 'e': unreferenced local variable
+  RciClient.cpp
+  RciWarnings.cpp
+  ToggleSwitch.cpp
+  UIManager.cpp
+  WindowManager.cpp
+C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\Linx v2.1.2\WindowManager.cpp(91,38): warning C4101: 'e': unreferenced local variable
+  Generating Code...
   Linx v2.1.2.vcxproj -> C:\Users\Admin\Desktop\Linx v2.1\Linx v2.1.2\Linx v2.1.2\x64\Debug\Linx v2.1.2.exe
